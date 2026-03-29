@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ['pyodide'],
-  },
+const nextConfig = { 
+  serverExternalPackages: ['pyodide'],
   images: {
     remotePatterns: [
       {

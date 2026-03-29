@@ -16,7 +16,8 @@ import {
   ChevronRight,
   Terminal,
   Receipt,
-  X
+  X,
+  Clock
 } from 'lucide-react';
 import Link from 'next/link';
 
