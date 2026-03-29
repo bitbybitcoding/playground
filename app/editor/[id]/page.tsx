@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 import TopNavBar from '@/components/TopNavBar';
 import SideNavBar from '@/components/SideNavBar';
 import BottomNavBar from '@/components/BottomNavBar';
-import { createClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { 
   Play, 
   RotateCcw, 
