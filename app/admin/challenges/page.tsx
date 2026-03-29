@@ -46,7 +46,7 @@ export default function AdminChallengesPage() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    difficulty: 'beginner' as const,
+    difficulty: 'beginner' as 'beginner' | 'intermediate' | 'advanced',
     category: 'Python',
     constraints: '',
     starter_code: '',
@@ -117,7 +117,7 @@ export default function AdminChallengesPage() {
       setFormData({
         title: '',
         description: '',
-        difficulty: 'beginner',
+        difficulty: 'beginner' as 'beginner' | 'intermediate' | 'advanced',
         category: 'Python',
         constraints: '',
         starter_code: '# Write your starter code here\n',
