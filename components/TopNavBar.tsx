@@ -94,6 +94,12 @@ export default function TopNavBar({ userRole }: TopNavBarProps) {
               {profile?.full_name?.split(' ')[0] || 'Profile'}
             </span>
           </div>
+          <button
+            onClick={handleSignOut}
+            className="text-sm text-slate-500 font-label font-medium hover:text-secondary transition-colors"
+          >
+            Sign Out
+          </button>
         </div>
 
         {/* Mobile menu button */}

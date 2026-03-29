@@ -113,6 +113,12 @@ CREATE POLICY "Admins can delete invite codes"
         )
     );
 
+-- Allow anyone (including unauthenticated) to read invite codes for signup validation
+CREATE POLICY "Anyone can read invite codes for validation"
+    ON public.invite_codes
+    FOR SELECT
+    USING (used=false);
+
 -- ============================================
 -- CHALLENGES TABLE
 -- ============================================

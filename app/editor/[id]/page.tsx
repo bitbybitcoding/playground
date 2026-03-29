@@ -66,6 +66,8 @@ export default function EditorPage() {
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
   
   const outputRef = useRef<HTMLDivElement>(null);
+  // After the existing outputRef declaration, add:
+  const liveOutputRef = useRef<string[]>([]);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load Pyodide
@@ -83,12 +85,15 @@ export default function EditorPage() {
           indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/',
           stdout: (text: string) => {
             if (isMounted) {
+              liveOutputRef.current.push(text);
               setOutput(prev => [...prev, text]);
             }
           },
           stderr: (text: string) => {
             if (isMounted) {
-              setOutput(prev => [...prev, `Error: ${text}`]);
+              const line = `Error: ${text}`;
+              liveOutputRef.current.push(line);
+              setOutput(prev => [...prev, line]);
             }
           },
         });
@@ -198,7 +203,7 @@ print(result)`);
     }
 
     fetchData();
-  }, [challengeId, supabase]);
+  }, [challengeId]);
 
   // Auto-save code
   const saveCode = useCallback(async () => {
@@ -255,34 +260,41 @@ print(result)`);
     if (!pyodide || isRunning) return;
 
     setIsRunning(true);
+    liveOutputRef.current = [];           // ← reset live output
     setOutput([]);
     setActiveTab('terminal');
 
     try {
-      // Clear previous output
       setOutput(['$ python main.py']);
+      liveOutputRef.current = ['$ python main.py'];
 
-      // Run the code
       await pyodide.runPythonAsync(code);
 
-      // Record attempt
+      // Record attempt — fetch current count first, then increment
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        const { data: existing } = await supabase
+          .from('user_progress')
+          .select('attempts')
+          .eq('user_id', user.id)
+          .eq('challenge_id', challengeId)
+          .maybeSingle();
+
         await supabase
           .from('user_progress')
           .upsert({
             user_id: user.id,
             challenge_id: challengeId,
-            code: code,
+            code,
             status: 'attempted',
-            attempts: supabase.rpc('increment_attempts', { row_id: challengeId }),
+            attempts: (existing?.attempts ?? 0) + 1,
             updated_at: new Date().toISOString(),
-          }, {
-            onConflict: 'user_id,challenge_id'
-          });
+          }, { onConflict: 'user_id,challenge_id' });
       }
     } catch (error: any) {
-      setOutput(prev => [...prev, `Error: ${error.message || 'Unknown error'}`]);
+      const errLine = `Error: ${error.message || 'Unknown error'}`;
+      liveOutputRef.current.push(errLine);
+      setOutput(prev => [...prev, errLine]);
     } finally {
       setIsRunning(false);
     }
@@ -295,13 +307,15 @@ print(result)`);
   };
 
   const submitSolution = async () => {
-    // Run the code first
     await runCode();
-    
-    // Check if output matches expected
-    const lastOutput = output[output.length - 1];
-    if (challenge?.expected_output && lastOutput?.includes(challenge.expected_output)) {
-      // Mark as completed
+
+    // Use liveOutputRef — state is stale here, ref is not
+    const lastOutput = liveOutputRef.current[liveOutputRef.current.length - 1] ?? '';
+
+    if (
+      challenge?.expected_output &&
+      lastOutput.includes(challenge.expected_output)
+    ) {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         await supabase
@@ -309,20 +323,26 @@ print(result)`);
           .upsert({
             user_id: user.id,
             challenge_id: challengeId,
-            code: code,
+            code,
             status: 'completed',
             completed_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-          }, {
-            onConflict: 'user_id,challenge_id'
-          });
+          }, { onConflict: 'user_id,challenge_id' });
 
-        // Update impact points
+        // Fetch current profile values first, then increment
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('impact_points, weekly_hours')
+          .eq('id', user.id)
+          .single();
+
         await supabase
           .from('profiles')
-          .update({ 
-            impact_points: supabase.rpc('increment', { amount: challenge.points }),
-            weekly_hours: supabase.rpc('increment', { amount: Math.round(challenge.time_estimate / 60) })
+          .update({
+            impact_points: (profile?.impact_points ?? 0) + challenge.points,
+            weekly_hours:
+              (profile?.weekly_hours ?? 0) +
+              Math.round(challenge.time_estimate / 60),
           })
           .eq('id', user.id);
       }

@@ -134,9 +134,16 @@ export default function AdminChallengesPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
+    let parsedTestCases;
+    try {
+      parsedTestCases = JSON.parse(formData.test_cases);
+    } catch {
+      alert('Invalid JSON in Test Cases. Please check the format and try again.');
+      return;
+    }
     const challengeData = {
       ...formData,
-      test_cases: JSON.parse(formData.test_cases),
+      test_cases: parsedTestCases,
     };
 
     if (editingChallenge) {

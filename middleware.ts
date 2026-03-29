@@ -35,7 +35,15 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/', '/login', '/signup'];
+  const publicRoutes = [
+  '/',
+  '/login',
+  '/signup',
+  '/forgot-password',
+  '/terms',
+  '/privacy',
+  '/conduct',];
+
   if (publicRoutes.includes(pathname)) {
     // If user is logged in and tries to access login/signup, redirect to dashboard
     if (user && (pathname === '/login' || pathname === '/signup')) {
