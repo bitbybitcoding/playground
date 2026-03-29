@@ -99,7 +99,7 @@ export default function EditorPage() {
         });
         
         if (isMounted) {
-          setPyodide(instance as PyodideInstance);
+          setPyodide(instance as unknown as PyodideInstance);
           setPyodideLoading(false);
         }
       } catch (error) {
