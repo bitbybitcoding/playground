@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { Eye, EyeOff, Mail, Lock, Key, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
 
 export default function SignupPage() {

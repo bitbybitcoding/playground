@@ -1,8 +1,6 @@
-// Re-export from split modules for backward compatibility.
-// Client Components: import from '@/lib/supabase/client'
-// Server Components: import from '@/lib/supabase/server'
+// Client-side re-export only. Safe for Client Components.
+// Server Components must import directly from '@/lib/supabase/server'.
 export { createClient } from '@/lib/supabase/client';
-export { createServerSupabaseClient, createAdminSupabaseClient } from '@/lib/supabase/server';
 
 // Types
 export type Database = {

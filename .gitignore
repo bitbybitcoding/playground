@@ -37,3 +37,6 @@ next-env.d.ts
 
 # patch files
 *.patch
+
+# all shell files
+*.sh
