@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import TopNavBar from '@/components/TopNavBar';
 import { 
   Plus, 
@@ -17,21 +17,51 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+type Difficulty = 'beginner' | 'intermediate' | 'advanced';
+
 interface Challenge {
   id: string;
   title: string;
   description: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  difficulty: Difficulty;
   category: string;
   constraints: string | null;
   starter_code: string;
-  test_cases: any[];
+  test_cases: { input: string; expected: string }[];
   expected_output: string | null;
   time_estimate: number;
   points: number;
   is_published: boolean;
   created_at: string;
 }
+
+interface FormData {
+  title: string;
+  description: string;
+  difficulty: Difficulty;
+  category: string;
+  constraints: string;
+  starter_code: string;
+  test_cases: string;
+  expected_output: string;
+  time_estimate: number;
+  points: number;
+  is_published: boolean;
+}
+
+const defaultForm: FormData = {
+  title: '',
+  description: '',
+  difficulty: 'beginner',
+  category: 'Python',
+  constraints: '',
+  starter_code: '# Write your starter code here\n',
+  test_cases: '[{"input": "", "expected": ""}]',
+  expected_output: '',
+  time_estimate: 30,
+  points: 10,
+  is_published: true,
+};
 
 export default function AdminChallengesPage() {
   const router = useRouter();
@@ -42,20 +72,7 @@ export default function AdminChallengesPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingChallenge, setEditingChallenge] = useState<Challenge | null>(null);
   const [userRole, setUserRole] = useState<'student' | 'admin' | null>(null);
-
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    difficulty: 'beginner' as 'beginner' | 'intermediate' | 'advanced',
-    category: 'Python',
-    constraints: '',
-    starter_code: '',
-    test_cases: '[{"input": "", "expected": ""}]',
-    expected_output: '',
-    time_estimate: 30,
-    points: 10,
-    is_published: true,
-  });
+  const [formData, setFormData] = useState<FormData>(defaultForm);
 
   useEffect(() => {
     checkAdminAndFetchChallenges();
@@ -91,7 +108,7 @@ export default function AdminChallengesPage() {
       .order('created_at', { ascending: false });
     
     if (data) {
-      setChallenges(data);
+      setChallenges(data as Challenge[]);
     }
     setLoading(false);
   }
@@ -114,19 +131,7 @@ export default function AdminChallengesPage() {
       });
     } else {
       setEditingChallenge(null);
-      setFormData({
-        title: '',
-        description: '',
-        difficulty: 'beginner' as 'beginner' | 'intermediate' | 'advanced',
-        category: 'Python',
-        constraints: '',
-        starter_code: '# Write your starter code here\n',
-        test_cases: '[{"input": "", "expected": ""}]',
-        expected_output: '',
-        time_estimate: 30,
-        points: 10,
-        is_published: true,
-      });
+      setFormData(defaultForm);
     }
     setShowModal(true);
   }
@@ -395,7 +400,7 @@ export default function AdminChallengesPage() {
                   <label className="block text-sm font-medium mb-1">Difficulty</label>
                   <select
                     value={formData.difficulty}
-                    onChange={(e) => setFormData({ ...formData, difficulty: e.target.value as any })}
+                    onChange={(e) => setFormData({ ...formData, difficulty: e.target.value as Difficulty })}
                     className="w-full px-3 py-2 bg-surface-container-low rounded-lg border border-outline-variant/30 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
                   >
                     <option value="beginner">Beginner</option>
