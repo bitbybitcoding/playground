@@ -13,7 +13,7 @@
     "@monaco-editor/react": "^4.6.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.47.0",
-    "next": "15.3.4",
+    "next": "15.1.9",
     "pyodide": "^0.26.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
