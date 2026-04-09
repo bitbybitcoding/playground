@@ -413,7 +413,13 @@ export default function AdminChallengesPage() {
                   <input
                     type="number"
                     value={formData.time_estimate}
-                    onChange={(e) => setFormData({ ...formData, time_estimate: Math.max(0, Number(e.target.value) || 0) })}
+                    onChange={(e) => {
+                      const parsedValue = Number(e.target.value);
+                      setFormData({
+                        ...formData,
+                        time_estimate: Number.isNaN(parsedValue) ? 0 : Math.max(0, parsedValue),
+                      });
+                    }}
                     className="w-full px-3 py-2 bg-surface-container-low rounded-lg border border-outline-variant/30 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
                   />
                 </div>
@@ -422,7 +428,13 @@ export default function AdminChallengesPage() {
                   <input
                     type="number"
                     value={formData.points}
-                    onChange={(e) => setFormData({ ...formData, points: Math.max(0, Number(e.target.value) || 0) })}
+                    onChange={(e) => {
+                      const parsedValue = Number(e.target.value);
+                      setFormData({
+                        ...formData,
+                        points: Number.isNaN(parsedValue) ? 0 : Math.max(0, parsedValue),
+                      });
+                    }}
                     className="w-full px-3 py-2 bg-surface-container-low rounded-lg border border-outline-variant/30 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
                   />
                 </div>

@@ -134,12 +134,16 @@ export default function EditorPage() {
         setUserRole(profile?.role || 'student');
 
         // Fetch user progress for this challenge
-        const { data: progress } = await supabase
+        const { data: progress, error: progressError } = await supabase
           .from('user_progress')
           .select('code')
           .eq('user_id', user.id)
           .eq('challenge_id', challengeId)
           .maybeSingle();
+
+        if (progressError) {
+          console.error('Failed to fetch saved progress:', progressError);
+        }
 
         if (progress?.code) {
           existingCode = progress.code;
