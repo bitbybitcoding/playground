@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import TopNavBar from '@/components/TopNavBar';
@@ -52,7 +52,7 @@ interface PyodideInstance {
 export default function EditorPage() {
   const params = useParams();
   const challengeId = params.id as string;
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [code, setCode] = useState('');
@@ -121,6 +121,8 @@ export default function EditorPage() {
   // Fetch challenge and user data
   useEffect(() => {
     async function fetchData() {
+      let existingCode: string | null = null;
+
       // Fetch user profile
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -132,14 +134,19 @@ export default function EditorPage() {
         setUserRole(profile?.role || 'student');
 
         // Fetch user progress for this challenge
-        const { data: progress } = await supabase
+        const { data: progress, error: progressError } = await supabase
           .from('user_progress')
           .select('code')
           .eq('user_id', user.id)
           .eq('challenge_id', challengeId)
-          .single();
+          .maybeSingle();
+
+        if (progressError) {
+          console.error('Failed to fetch saved progress:', progressError);
+        }
 
         if (progress?.code) {
+          existingCode = progress.code;
           setCode(progress.code);
         }
       }
@@ -173,7 +180,7 @@ print(result)`,
           time_estimate: 15,
           points: 10
         });
-        if (!code) {
+        if (!existingCode) {
           setCode(`def calculate_journey(distance, speed):
     # Calculate the total time taken
     time = distance / speed
@@ -195,7 +202,7 @@ print(result)`);
         
         if (challengeData) {
           setChallenge(challengeData);
-          if (!code) {
+          if (!existingCode) {
             setCode(challengeData.starter_code || '');
           }
         }

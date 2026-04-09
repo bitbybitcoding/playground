@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Bell, Settings, Menu, X } from 'lucide-react';
 
 interface TopNavBarProps {
@@ -14,7 +14,7 @@ interface TopNavBarProps {
 export default function TopNavBar({ userRole }: TopNavBarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profile, setProfile] = useState<{ full_name: string | null; email: string } | null>(null);
 
