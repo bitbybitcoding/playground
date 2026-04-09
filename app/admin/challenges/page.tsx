@@ -413,7 +413,7 @@ export default function AdminChallengesPage() {
                   <input
                     type="number"
                     value={formData.time_estimate}
-                    onChange={(e) => setFormData({ ...formData, time_estimate: parseInt(e.target.value) })}
+                    onChange={(e) => setFormData({ ...formData, time_estimate: Math.max(0, Number(e.target.value) || 0) })}
                     className="w-full px-3 py-2 bg-surface-container-low rounded-lg border border-outline-variant/30 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
                   />
                 </div>
@@ -422,7 +422,7 @@ export default function AdminChallengesPage() {
                   <input
                     type="number"
                     value={formData.points}
-                    onChange={(e) => setFormData({ ...formData, points: parseInt(e.target.value) })}
+                    onChange={(e) => setFormData({ ...formData, points: Math.max(0, Number(e.target.value) || 0) })}
                     className="w-full px-3 py-2 bg-surface-container-low rounded-lg border border-outline-variant/30 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
                   />
                 </div>
