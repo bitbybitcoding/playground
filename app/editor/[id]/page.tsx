@@ -206,7 +206,7 @@ print(result)`);
     }
 
     fetchData();
-  }, [challengeId, supabase]);
+  }, [challengeId]);
 
   // Auto-save code
   const saveCode = useCallback(async () => {
