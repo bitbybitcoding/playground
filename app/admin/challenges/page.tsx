@@ -417,7 +417,9 @@ export default function AdminChallengesPage() {
                       const parsedValue = Number(e.target.value);
                       setFormData({
                         ...formData,
-                        time_estimate: Number.isNaN(parsedValue) ? 0 : Math.max(0, parsedValue),
+                        time_estimate: Number.isNaN(parsedValue)
+                          ? formData.time_estimate
+                          : Math.max(0, parsedValue),
                       });
                     }}
                     className="w-full px-3 py-2 bg-surface-container-low rounded-lg border border-outline-variant/30 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
@@ -432,7 +434,9 @@ export default function AdminChallengesPage() {
                       const parsedValue = Number(e.target.value);
                       setFormData({
                         ...formData,
-                        points: Number.isNaN(parsedValue) ? 0 : Math.max(0, parsedValue),
+                        points: Number.isNaN(parsedValue)
+                          ? formData.points
+                          : Math.max(0, parsedValue),
                       });
                     }}
                     className="w-full px-3 py-2 bg-surface-container-low rounded-lg border border-outline-variant/30 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
