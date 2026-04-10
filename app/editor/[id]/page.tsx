@@ -235,7 +235,7 @@ export default function EditorPage() {
     }
 
     fetchData();
-  }, [challengeId, supabase]);
+  }, [challengeId]);
 
   // Auto-save code
   const saveCode = useCallback(async () => {
@@ -264,7 +264,7 @@ export default function EditorPage() {
     } else {
       setSaveStatus('saved');
     }
-  }, [challenge, challengeMissing, code, challengeId, supabase]);
+  }, [challenge, challengeMissing, code, challengeId]);
 
   useEffect(() => {
     if (!challenge || challengeMissing || isChallengeLoading) {
