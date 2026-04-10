@@ -28,7 +28,6 @@ export default async function EditorIndexPage() {
   const { data: firstPublishedChallenge } = await supabase
     .from('challenges')
     .select('id')
-    .eq('is_published', true)
     .order('created_at', { ascending: true })
     .limit(1)
     .maybeSingle();

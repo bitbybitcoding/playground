@@ -26,7 +26,6 @@ export default async function MastersPathPage() {
   const { data: challenges } = await supabase
     .from('challenges')
     .select('*')
-    .eq('is_published', true)
     .order('difficulty', { ascending: true })
     .order('created_at', { ascending: true });
 

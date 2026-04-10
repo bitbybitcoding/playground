@@ -217,7 +217,6 @@ export default function EditorPage() {
         .from('challenges')
         .select('*')
         .eq('id', challengeId)
-        .eq('is_published', true)
         .maybeSingle();
 
       if (challengeData) {
