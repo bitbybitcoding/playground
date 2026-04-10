@@ -7,12 +7,15 @@ import { LayoutDashboard, Library, Terminal, Heart, User } from 'lucide-react';
 export default function BottomNavBar() {
   const pathname = usePathname();
 
-  const isActive = (path: string) => pathname === path;
+  const isActive = (path: string) => {
+    if (path === '/editor') return pathname.startsWith('/editor');
+    return pathname === path;
+  };
 
   const navItems = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Home' },
     { href: '/library', icon: Library, label: 'Library' },
-    { href: '/workspace', icon: Terminal, label: 'Code' },
+    { href: '/editor', icon: Terminal, label: 'Code' },
     { href: '/masters-path', icon: Heart, label: 'Impact' },
     { href: '/dashboard', icon: User, label: 'Account' },
   ];
