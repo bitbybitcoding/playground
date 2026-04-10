@@ -14,31 +14,31 @@ export default async function LibraryPage() {
     redirect('/login');
   }
 
-  // Fetch user profile
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-
-  // Fetch all published challenges
-  const { data: challenges } = await supabase
-    .from('challenges')
-    .select('*')
-    .eq('is_published', true)
-    .order('created_at', { ascending: false });
-
-  // Fetch user progress for these challenges
-  const { data: userProgress } = await supabase
-    .from('user_progress')
-    .select('challenge_id, status')
-    .eq('user_id', user.id);
-
-  // Fetch pathways
-  const { data: pathways } = await supabase
-    .from('pathways')
-    .select('*')
-    .eq('is_active', true);
+  const [
+    { data: profile },
+    { data: challenges },
+    { data: userProgress },
+    { data: pathways },
+  ] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single(),
+    supabase
+      .from('challenges')
+      .select('*')
+      .eq('is_published', true)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('user_progress')
+      .select('challenge_id, status')
+      .eq('user_id', user.id),
+    supabase
+      .from('pathways')
+      .select('*')
+      .eq('is_active', true),
+  ]);
 
   // Get challenge status
   const getChallengeStatus = (challengeId: string) => {

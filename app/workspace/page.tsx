@@ -23,19 +23,18 @@ export default async function WorkspacePage() {
     redirect('/login');
   }
 
-  // Fetch user profile
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-
-  // Fetch user progress (projects)
-  const { data: projects } = await supabase
-    .from('user_progress')
-    .select('*, challenges(*)')
-    .eq('user_id', user.id)
-    .order('updated_at', { ascending: false });
+  const [{ data: profile }, { data: projects }] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single(),
+    supabase
+      .from('user_progress')
+      .select('*, challenges(*)')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false }),
+  ]);
 
   const recentChallenges = (projects || [])
     .map((project) => project.challenges)
