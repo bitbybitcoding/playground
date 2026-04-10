@@ -14,34 +14,34 @@ export default async function DashboardPage() {
     redirect('/login');
   }
 
-  // Fetch user profile
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-
-  // Fetch user progress
-  const { data: userProgress } = await supabase
-    .from('user_progress')
-    .select('*, challenges(*)')
-    .eq('user_id', user.id)
-    .order('updated_at', { ascending: false })
-    .limit(5);
-
-  // Fetch pathways progress
-  const { data: pathwayProgress } = await supabase
-    .from('user_pathway_progress')
-    .select('*, pathways(*)')
-    .eq('user_id', user.id);
-
-  // Fetch recent challenges
-  const { data: recentChallenges } = await supabase
-    .from('challenges')
-    .select('*')
-    .eq('is_published', true)
-    .order('created_at', { ascending: false })
-    .limit(3);
+  const [
+    { data: profile },
+    { data: userProgress },
+    { data: pathwayProgress },
+    { data: recentChallenges },
+  ] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single(),
+    supabase
+      .from('user_progress')
+      .select('*, challenges(*)')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false })
+      .limit(5),
+    supabase
+      .from('user_pathway_progress')
+      .select('*, pathways(*)')
+      .eq('user_id', user.id),
+    supabase
+      .from('challenges')
+      .select('*')
+      .eq('is_published', true)
+      .order('created_at', { ascending: false })
+      .limit(3),
+  ]);
 
   const firstName = profile?.full_name?.split(' ')[0] || 'Coder';
   const completedChallenges = userProgress?.filter(p => p.status === 'completed').length || 0;

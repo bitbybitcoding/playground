@@ -2,6 +2,41 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  // Public routes that don't require authentication
+  const publicRoutes = [
+    '/',
+    '/login',
+    '/signup',
+    '/forgot-password',
+    '/terms',
+    '/privacy',
+    '/conduct',
+  ];
+  const isPublicRoute = publicRoutes.includes(pathname);
+  const isAuthPage = pathname === '/login' || pathname === '/signup';
+  const hasSupabaseAuthCookie = request.cookies
+    .getAll()
+    .some(({ name }) => name.startsWith('sb-') && name.includes('auth-token'));
+
+  // Fast path for public non-auth pages — skip auth network checks entirely.
+  if (isPublicRoute && !isAuthPage) {
+    return NextResponse.next({
+      request,
+    });
+  }
+
+  // Fast path for visitors with no auth cookie.
+  if (!hasSupabaseAuthCookie) {
+    if (isPublicRoute) {
+      return NextResponse.next({
+        request,
+      });
+    }
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -27,33 +62,17 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Check auth status
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const pathname = request.nextUrl.pathname;
-
-  // Public routes that don't require authentication
-  const publicRoutes = [
-    '/',
-    '/login',
-    '/signup',
-    '/forgot-password',
-    '/terms',
-    '/privacy',
-    '/conduct',
-  ];
-
-  if (publicRoutes.includes(pathname)) {
-    // If user is logged in and tries to access login/signup, redirect to dashboard
-    if (user && (pathname === '/login' || pathname === '/signup')) {
+  if (isPublicRoute) {
+    if (user && isAuthPage) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
     return supabaseResponse;
   }
 
-  // If no user, redirect to login
   if (!user) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
