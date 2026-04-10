@@ -37,7 +37,7 @@ export default async function WorkspacePage() {
     .eq('user_id', user.id)
     .order('updated_at', { ascending: false });
 
-  const recentChallengeSummaries = (projects || [])
+  const recentChallenges = (projects || [])
     .map((project) => project.challenges)
     .filter(Boolean)
     .slice(0, 3);
@@ -203,11 +203,11 @@ export default async function WorkspacePage() {
               </div>
             </div>
 
-            {recentChallengeSummaries.length > 0 && (
+            {recentChallenges.length > 0 && (
               <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/10">
                 <h3 className="font-display text-lg font-bold mb-4">Recent Challenge Topics</h3>
                 <div className="space-y-3">
-                  {recentChallengeSummaries.map((challenge: any) => (
+                  {recentChallenges.map((challenge: any) => (
                     <div key={challenge.id} className="flex items-center justify-between">
                       <p className="text-sm font-medium line-clamp-1">{challenge.title}</p>
                       <span className="text-[10px] uppercase tracking-wider text-slate-500">

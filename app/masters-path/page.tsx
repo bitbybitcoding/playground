@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowRight, CheckCircle, Clock } from 'lucide-react';
 
 export default async function MastersPathPage() {
+  const MAX_CARD_CHALLENGES = 8;
   const supabase = await createServerSupabaseClient();
 
   const {
@@ -39,7 +40,7 @@ export default async function MastersPathPage() {
   const totalChallenges = challenges?.length || 0;
   const progressPercentage = totalChallenges > 0 ? Math.round((completedCount / totalChallenges) * 100) : 0;
   const featuredChallenge = challenges?.[0] || null;
-  const otherChallenges = challenges?.slice(1, 9) || [];
+  const otherChallenges = challenges?.slice(1, MAX_CARD_CHALLENGES + 1) || [];
 
   const getStatus = (challengeId: string) => progressByChallengeId.get(challengeId) || 'not_started';
 
