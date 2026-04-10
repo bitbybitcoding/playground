@@ -42,6 +42,10 @@ export default async function LibraryPage() {
 
   let challenges = challengeResult.data || [];
 
+  if (challengeResult.error) {
+    console.error('Primary library challenges query failed, attempting admin fallback:', challengeResult.error.message);
+  }
+
   if ((challengeResult.error || challenges.length === 0) && process.env.SUPABASE_SERVICE_ROLE_KEY) {
     const adminSupabase = createAdminSupabaseClient();
     const { data: adminChallenges, error: adminChallengesError } = await adminSupabase
@@ -54,10 +58,6 @@ export default async function LibraryPage() {
     } else {
       challenges = adminChallenges || [];
     }
-  }
-
-  if (challengeResult.error) {
-    console.error('Failed to fetch challenges for library page:', challengeResult.error.message);
   }
 
   // Get challenge status
