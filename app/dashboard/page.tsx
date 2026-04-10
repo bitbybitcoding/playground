@@ -46,6 +46,12 @@ export default async function DashboardPage() {
   const firstName = profile?.full_name?.split(' ')[0] || 'Coder';
   const completedChallenges = userProgress?.filter(p => p.status === 'completed').length || 0;
   const inProgressChallenges = userProgress?.filter(p => p.status === 'in_progress').length || 0;
+  const activeChallenge =
+    userProgress?.find((p) => p.status === 'in_progress')?.challenges ||
+    userProgress?.[0]?.challenges ||
+    recentChallenges?.[0] ||
+    null;
+  const resumeChallengeId = userProgress?.[0]?.challenge_id || recentChallenges?.[0]?.id || null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -73,7 +79,7 @@ export default async function DashboardPage() {
                 <span className="sm:hidden">Resume</span>
               </Link>
               <Link 
-                href="/editor/default"
+                href={resumeChallengeId ? `/editor/${resumeChallengeId}` : '/library'}
                 className="px-4 md:px-6 py-3 bg-surface-container-highest text-on-surface font-bold rounded-lg transition-all active:scale-95 flex items-center gap-2 text-sm md:text-base"
               >
                 <Code className="w-4 h-4" />
@@ -100,8 +106,14 @@ export default async function DashboardPage() {
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <span className="text-[10px] text-primary font-bold uppercase tracking-[0.2em] mb-2 block">Current Course</span>
-                    <h2 className="font-display text-xl md:text-2xl font-bold mb-1">Python: Language & Application</h2>
-                    <p className="text-slate-500 font-medium text-sm">Week 5: File I/O Operations</p>
+                    {activeChallenge && (
+                      <>
+                        <h2 className="font-display text-xl md:text-2xl font-bold mb-1">{activeChallenge.title}</h2>
+                        <p className="text-slate-500 font-medium text-sm">
+                          {activeChallenge.category} • {activeChallenge.difficulty}
+                        </p>
+                      </>
+                    )}
                   </div>
                   <span className="bg-secondary/10 text-secondary text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wider">
                     {Math.round((completedChallenges / (completedChallenges + inProgressChallenges + 1)) * 100) || 0}% Complete

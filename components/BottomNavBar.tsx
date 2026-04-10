@@ -12,7 +12,7 @@ export default function BottomNavBar() {
   const navItems = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Home' },
     { href: '/library', icon: Library, label: 'Library' },
-    { href: '/editor/default', icon: Terminal, label: 'Code' },
+    { href: '/library', icon: Terminal, label: 'Code' },
     { href: '/masters-path', icon: Heart, label: 'Impact' },
     { href: '/dashboard', icon: User, label: 'Account' },
   ];

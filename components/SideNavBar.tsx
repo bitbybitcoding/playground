@@ -16,12 +16,18 @@ interface SideNavBarProps {
   activeTab?: 'files' | 'search' | 'debugger' | 'extensions' | 'settings';
   onRunCode?: () => void;
   showTerminal?: boolean;
+  challengeTitle?: string | null;
+  challengeMeta?: string | null;
+  helpText?: string | null;
 }
 
 export default function SideNavBar({ 
   activeTab = 'files', 
   onRunCode,
-  showTerminal = true 
+  showTerminal = true,
+  challengeTitle,
+  challengeMeta,
+  helpText,
 }: SideNavBarProps) {
   const [active, setActive] = useState(activeTab);
 
@@ -35,17 +41,27 @@ export default function SideNavBar({
 
   return (
     <aside className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-[#f5f3ef] flex flex-col py-6 border-r border-outline-variant/15 z-40 hidden lg:flex">
-      <div className="px-6 mb-8">
-        <div className="flex items-center gap-3 mb-1">
-          <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
-            <Terminal className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="font-label font-bold text-sm text-on-surface">Python: Language</h3>
-            <p className="font-label text-[10px] uppercase tracking-widest text-slate-500">LEVEL 1 • 15 MINS</p>
+      {(challengeTitle || challengeMeta) && (
+        <div className="px-6 mb-8">
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+              <Terminal className="w-5 h-5" />
+            </div>
+            <div>
+              {challengeTitle && (
+                <h3 className="font-label font-bold text-sm text-on-surface line-clamp-1">
+                  {challengeTitle}
+                </h3>
+              )}
+              {challengeMeta && (
+                <p className="font-label text-[10px] uppercase tracking-widest text-slate-500">
+                  {challengeMeta}
+                </p>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <nav className="flex-1 space-y-1 px-4">
         {navItems.map((item) => {
@@ -69,11 +85,13 @@ export default function SideNavBar({
       </nav>
 
       <div className="mt-auto px-6 space-y-4">
-        <div className="p-4 bg-primary-fixed/30 rounded-xl border border-primary/10">
-          <p className="text-xs font-label text-on-primary-fixed-variant leading-relaxed">
-            Need help? Review the <span className="font-bold underline decoration-primary/30">Logic Lessons</span> first.
-          </p>
-        </div>
+        {helpText && (
+          <div className="p-4 bg-primary-fixed/30 rounded-xl border border-primary/10">
+            <p className="text-xs font-label text-on-primary-fixed-variant leading-relaxed">
+              {helpText}
+            </p>
+          </div>
+        )}
         
         <button
           onClick={onRunCode}

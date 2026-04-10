@@ -49,6 +49,16 @@ interface PyodideInstance {
   pyimport: (name: string) => unknown;
 }
 
+declare global {
+  interface Window {
+    loadPyodide?: (options: {
+      indexURL: string;
+      stdout?: (text: string) => void;
+      stderr?: (text: string) => void;
+    }) => Promise<PyodideInstance>;
+  }
+}
+
 export default function EditorPage() {
   const params = useParams();
   const challengeId = params.id as string;
@@ -64,11 +74,34 @@ export default function EditorPage() {
   const [showTip, setShowTip] = useState(true);
   const [userRole, setUserRole] = useState<'student' | 'admin' | null>(null);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
+  const [isChallengeLoading, setIsChallengeLoading] = useState(true);
+  const [challengeMissing, setChallengeMissing] = useState(false);
   
   const outputRef = useRef<HTMLDivElement>(null);
-  // After the existing outputRef declaration, add:
   const liveOutputRef = useRef<string[]>([]);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const loadPyodideScript = useCallback(async () => {
+    if (typeof window === 'undefined') return;
+    if (window.loadPyodide) return;
+
+    await new Promise<void>((resolve, reject) => {
+      const existingScript = document.querySelector<HTMLScriptElement>('script[data-pyodide-runtime="true"]');
+      if (existingScript) {
+        existingScript.addEventListener('load', () => resolve(), { once: true });
+        existingScript.addEventListener('error', () => reject(new Error('Failed to load Pyodide runtime script')), { once: true });
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js';
+      script.async = true;
+      script.dataset.pyodideRuntime = 'true';
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Failed to load Pyodide runtime script'));
+      document.head.appendChild(script);
+    });
+  }, []);
 
   // Load Pyodide
   useEffect(() => {
@@ -77,11 +110,27 @@ export default function EditorPage() {
     async function loadPyodide() {
       try {
         setPyodideLoading(true);
-        const { loadPyodide } = await import('pyodide');
-        
         if (!isMounted) return;
-        
-        const instance = await loadPyodide({
+
+        let loadPyodideFn: ((options: {
+          indexURL: string;
+          stdout?: (text: string) => void;
+          stderr?: (text: string) => void;
+        }) => Promise<PyodideInstance>) | undefined;
+
+        try {
+          const pyodideModule = await import('pyodide');
+          loadPyodideFn = pyodideModule.loadPyodide as typeof loadPyodideFn;
+        } catch {
+          await loadPyodideScript();
+          loadPyodideFn = window.loadPyodide;
+        }
+
+        if (!loadPyodideFn) {
+          throw new Error('Pyodide loader unavailable');
+        }
+
+        const instance = await loadPyodideFn({
           indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/',
           stdout: (text: string) => {
             if (isMounted) {
@@ -99,7 +148,7 @@ export default function EditorPage() {
         });
         
         if (isMounted) {
-          setPyodide(instance as unknown as PyodideInstance);
+          setPyodide(instance);
           setPyodideLoading(false);
         }
       } catch (error) {
@@ -116,11 +165,13 @@ export default function EditorPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [loadPyodideScript]);
 
   // Fetch challenge and user data
   useEffect(() => {
     async function fetchData() {
+      setIsChallengeLoading(true);
+      setChallengeMissing(false);
       let existingCode: string | null = null;
 
       // Fetch user profile
@@ -151,69 +202,34 @@ export default function EditorPage() {
         }
       }
 
-      // Fetch challenge
-      if (challengeId === 'default') {
-        // Use a default challenge
-        setChallenge({
-          id: 'default',
-          title: 'The Infinite Voyager',
-          description: 'Welcome, Commander. Your starship needs an automated system to calculate the duration of deep-space jumps. Complete the calculate_journey function to accept two parameters: distance and speed.',
-          difficulty: 'beginner',
-          category: 'Python',
-          constraints: 'Distance will always be a positive integer. Speed will be greater than zero. Return a formatted string as shown in the template.',
-          starter_code: `def calculate_journey(distance, speed):
-    # Calculate the total time taken
-    time = distance / speed
-    return f"Travel time: {time} hours"
+      const { data: challengeData } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('id', challengeId)
+        .eq('is_published', true)
+        .maybeSingle();
 
-# Test your function here
-distance_input = 150
-speed_input = 60
-
-result = calculate_journey(distance_input, speed_input)
-print(result)`,
-          test_cases: [
-            { input: 'calculate_journey(150, 60)', expected: 'Travel time: 2.5 hours' },
-            { input: 'calculate_journey(300, 50)', expected: 'Travel time: 6.0 hours' }
-          ],
-          expected_output: 'Travel time: 2.5 hours',
-          time_estimate: 15,
-          points: 10
-        });
+      if (challengeData) {
+        setChallenge(challengeData);
         if (!existingCode) {
-          setCode(`def calculate_journey(distance, speed):
-    # Calculate the total time taken
-    time = distance / speed
-    return f"Travel time: {time} hours"
-
-# Test your function here
-distance_input = 150
-speed_input = 60
-
-result = calculate_journey(distance_input, speed_input)
-print(result)`);
+          setCode(challengeData.starter_code || '');
         }
       } else {
-        const { data: challengeData } = await supabase
-          .from('challenges')
-          .select('*')
-          .eq('id', challengeId)
-          .single();
-        
-        if (challengeData) {
-          setChallenge(challengeData);
-          if (!existingCode) {
-            setCode(challengeData.starter_code || '');
-          }
-        }
+        setChallenge(null);
+        setChallengeMissing(true);
+        setCode('');
       }
+
+      setIsChallengeLoading(false);
     }
 
     fetchData();
-  }, [challengeId]);
+  }, [challengeId, supabase]);
 
   // Auto-save code
   const saveCode = useCallback(async () => {
+    if (!challenge || challengeMissing) return;
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -237,9 +253,13 @@ print(result)`);
     } else {
       setSaveStatus('saved');
     }
-  }, [code, challengeId, supabase]);
+  }, [challenge, challengeMissing, code, challengeId, supabase]);
 
   useEffect(() => {
+    if (!challenge || challengeMissing || isChallengeLoading) {
+      return;
+    }
+
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
@@ -254,7 +274,7 @@ print(result)`);
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [code, saveCode]);
+  }, [challenge, challengeMissing, isChallengeLoading, code, saveCode]);
 
   // Scroll to bottom of output
   useEffect(() => {
@@ -356,7 +376,7 @@ print(result)`);
     }
   };
 
-  if (!challenge) {
+  if (isChallengeLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -367,12 +387,36 @@ print(result)`);
     );
   }
 
+  if (challengeMissing || !challenge) {
+    return (
+      <div className="min-h-screen bg-background">
+        <TopNavBar userRole={userRole} />
+        <main className="pt-24 px-4 md:px-8">
+          <div className="max-w-3xl mx-auto text-center py-20">
+            <AlertCircle className="w-10 h-10 mx-auto text-slate-400 mb-4" />
+            <h1 className="font-display text-2xl font-bold mb-2">Challenge not found</h1>
+            <p className="text-slate-500 mb-6">This challenge is unavailable right now.</p>
+            <Link href="/library" className="text-primary font-bold hover:underline">
+              Back to Library
+            </Link>
+          </div>
+        </main>
+        <BottomNavBar />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <TopNavBar userRole={userRole} />
       
       <main className="pt-16 h-screen flex overflow-hidden">
-        <SideNavBar onRunCode={runCode} />
+        <SideNavBar
+          onRunCode={runCode}
+          challengeTitle={challenge.title}
+          challengeMeta={`${challenge.difficulty} • ${challenge.time_estimate} mins`}
+          helpText={challenge.constraints || null}
+        />
         
         <div className="lg:ml-64 flex-1 flex flex-col lg:flex-row bg-surface overflow-hidden">
           {/* Code Editor Section */}
@@ -545,12 +589,12 @@ print(result)`);
               )}
               
               {/* Tip Box */}
-              {showTip && (
+              {showTip && challenge.constraints && (
                 <div className="p-4 md:p-6 bg-gradient-to-br from-primary-fixed/20 to-surface-container-lowest rounded-2xl border border-primary/5">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2 text-primary">
                       <Lightbulb className="w-4 h-4" />
-                      <span className="font-label font-bold text-xs uppercase tracking-widest">Pro Tip</span>
+                      <span className="font-label font-bold text-xs uppercase tracking-widest">Tip</span>
                     </div>
                     <button 
                       onClick={() => setShowTip(false)}
@@ -560,7 +604,7 @@ print(result)`);
                     </button>
                   </div>
                   <p className="text-xs italic text-on-primary-fixed-variant leading-relaxed">
-                    Use &quot;f-strings&quot; to easily embed variables into your strings. It makes the code much more readable!
+                    {challenge.constraints}
                   </p>
                 </div>
               )}

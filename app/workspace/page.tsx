@@ -6,16 +6,12 @@ import Link from 'next/link';
 import { 
   Plus, 
   ArrowRight, 
-  Terminal, 
-  Users, 
-  Calendar, 
-  Globe,
+  Terminal,
   Folder,
   FileText,
   Database,
   Code,
-  ChevronRight,
-  MoreHorizontal
+  ChevronRight
 } from 'lucide-react';
 
 export default async function WorkspacePage() {
@@ -40,6 +36,11 @@ export default async function WorkspacePage() {
     .select('*, challenges(*)')
     .eq('user_id', user.id)
     .order('updated_at', { ascending: false });
+
+  const recentChallengeSummaries = (projects || [])
+    .map((project) => project.challenges)
+    .filter(Boolean)
+    .slice(0, 3);
 
   return (
     <div className="min-h-screen bg-background">
@@ -187,71 +188,6 @@ export default async function WorkspacePage() {
 
           {/* Sidebar Content */}
           <section className="col-span-1 lg:col-span-4 space-y-6 md:space-y-8">
-            {/* Collaboration Section */}
-            <div className="bg-surface-container-low p-6 md:p-8 rounded-2xl md:rounded-3xl border border-outline-variant/10">
-              <h2 className="font-display text-xl md:text-2xl font-bold mb-4 md:mb-6 italic">Collaboration</h2>
-              <div className="space-y-4 md:space-y-6">
-                <div className="flex gap-4 items-start">
-                  <div className="w-10 h-10 rounded-full bg-secondary-container/20 flex items-center justify-center text-secondary shrink-0">
-                    <Users className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold font-interface">Peer Review</p>
-                    <p className="text-xs text-slate-500 font-body">Review code from your peers</p>
-                    <button className="mt-2 text-xs font-bold text-secondary uppercase tracking-widest border-b-2 border-secondary/30 pb-0.5">
-                      Start Review
-                    </button>
-                  </div>
-                </div>
-                <div className="flex gap-4 items-start">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                    <Calendar className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold font-interface">Team Sessions</p>
-                    <p className="text-xs text-slate-500 font-body">Saturday mornings, 10am-1pm</p>
-                    <button className="mt-2 text-xs font-bold text-primary uppercase tracking-widest border-b-2 border-primary/30 pb-0.5">
-                      View Schedule
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Community Partnerships */}
-            <div className="bg-inverse-surface text-inverse-on-surface p-6 md:p-8 rounded-2xl md:rounded-3xl relative overflow-hidden">
-              <div className="relative z-10">
-                <h2 className="font-display text-xl md:text-2xl font-bold mb-4 italic">Partnerships</h2>
-                <p className="text-xs font-label text-tertiary-fixed mb-4 md:mb-6 uppercase tracking-widest font-bold">
-                  Upcoming Impact
-                </p>
-                <div className="space-y-4 md:space-y-6">
-                  <div className="group cursor-pointer">
-                    <p className="text-sm font-bold mb-1">GreenTech Foundation</p>
-                    <p className="text-xs text-slate-400 font-body">Carbon Offset Calculator</p>
-                    <div className="mt-3 flex items-center justify-between">
-                      <span className="text-[10px] font-bold px-2 py-0.5 bg-tertiary/20 text-tertiary-fixed rounded">
-                        Coming Soon
-                      </span>
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                  <div className="group cursor-pointer">
-                    <p className="text-sm font-bold mb-1">Open Health Lab</p>
-                    <p className="text-xs text-slate-400 font-body">Data Visualization Dashboard</p>
-                    <div className="mt-3 flex items-center justify-between">
-                      <span className="text-[10px] font-bold px-2 py-0.5 bg-tertiary/20 text-tertiary-fixed rounded">
-                        In Planning
-                      </span>
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {/* Aesthetic Gradient Texture */}
-              <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-primary/20 blur-[80px] rounded-full"></div>
-            </div>
-
             {/* Quick Stats */}
             <div className="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/10">
               <h3 className="font-display text-lg font-bold mb-4">Quick Stats</h3>
@@ -266,45 +202,24 @@ export default async function WorkspacePage() {
                 </div>
               </div>
             </div>
+
+            {recentChallengeSummaries.length > 0 && (
+              <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/10">
+                <h3 className="font-display text-lg font-bold mb-4">Recent Challenge Topics</h3>
+                <div className="space-y-3">
+                  {recentChallengeSummaries.map((challenge: any) => (
+                    <div key={challenge.id} className="flex items-center justify-between">
+                      <p className="text-sm font-medium line-clamp-1">{challenge.title}</p>
+                      <span className="text-[10px] uppercase tracking-wider text-slate-500">
+                        {challenge.difficulty}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
         </div>
-
-        {/* Horizontal Scroll Section */}
-        <section className="mt-16 md:mt-24">
-          <h2 className="font-display text-2xl md:text-3xl font-bold italic mb-6 md:mb-8">Recently Archived</h2>
-          <div className="flex gap-4 md:gap-8 overflow-x-auto pb-6 md:pb-8 snap-x no-scrollbar">
-            <div className="snap-start min-w-[260px] md:min-w-[300px] h-40 md:h-48 bg-surface-container p-4 md:p-6 rounded-2xl flex flex-col justify-between">
-              <div>
-                <Folder className="w-5 h-5 text-slate-400" />
-                <h4 className="font-bold mt-4 text-sm md:text-base">Python Fundamentals</h4>
-                <p className="text-xs text-slate-500 mt-2">Week 1-4 Materials</p>
-              </div>
-              <p className="text-[10px] font-bold font-label text-slate-400 uppercase tracking-widest">
-                12 Exercises
-              </p>
-            </div>
-            <div className="snap-start min-w-[260px] md:min-w-[300px] h-40 md:h-48 bg-surface-container p-4 md:p-6 rounded-2xl flex flex-col justify-between">
-              <div>
-                <Folder className="w-5 h-5 text-slate-400" />
-                <h4 className="font-bold mt-4 text-sm md:text-base">File I/O Module</h4>
-                <p className="text-xs text-slate-500 mt-2">Reading & Writing Data</p>
-              </div>
-              <p className="text-[10px] font-bold font-label text-slate-400 uppercase tracking-widest">
-                8 Exercises
-              </p>
-            </div>
-            <div className="snap-start min-w-[260px] md:min-w-[300px] h-40 md:h-48 bg-surface-container p-4 md:p-6 rounded-2xl flex flex-col justify-between">
-              <div>
-                <Folder className="w-5 h-5 text-slate-400" />
-                <h4 className="font-bold mt-4 text-sm md:text-base">OOP Concepts</h4>
-                <p className="text-xs text-slate-500 mt-2">Classes & Objects</p>
-              </div>
-              <p className="text-[10px] font-bold font-label text-slate-400 uppercase tracking-widest">
-                10 Exercises
-              </p>
-            </div>
-          </div>
-        </section>
       </main>
 
       {/* Footer Identity */}
