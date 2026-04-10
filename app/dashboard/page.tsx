@@ -38,7 +38,6 @@ export default async function DashboardPage() {
     supabase
       .from('challenges')
       .select('*')
-      .eq('is_published', true)
       .order('created_at', { ascending: false })
       .limit(3),
   ]);

@@ -28,7 +28,6 @@ export default async function LibraryPage() {
     supabase
       .from('challenges')
       .select('*')
-      .eq('is_published', true)
       .order('created_at', { ascending: false }),
     supabase
       .from('user_progress')
