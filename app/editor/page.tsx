@@ -25,15 +25,15 @@ export default async function EditorIndexPage() {
     redirect(`/editor/${latestProgress.challenge_id}`);
   }
 
-  const { data: firstPublishedChallenge } = await supabase
+  const { data: firstChallenge } = await supabase
     .from('challenges')
     .select('id')
     .order('created_at', { ascending: true })
     .limit(1)
     .maybeSingle();
 
-  if (firstPublishedChallenge?.id) {
-    redirect(`/editor/${firstPublishedChallenge.id}`);
+  if (firstChallenge?.id) {
+    redirect(`/editor/${firstChallenge.id}`);
   }
 
   redirect('/library');
