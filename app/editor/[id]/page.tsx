@@ -42,11 +42,7 @@ interface Challenge {
 }
 
 interface PyodideInstance {
-  runPython: (code: string) => unknown;
   runPythonAsync: (code: string) => Promise<unknown>;
-  loadPackage: (packageName: string) => Promise<void>;
-  isPyProxy: (obj: unknown) => boolean;
-  pyimport: (name: string) => unknown;
 }
 
 declare global {
@@ -116,11 +112,11 @@ export default function EditorPage() {
           indexURL: string;
           stdout?: (text: string) => void;
           stderr?: (text: string) => void;
-        }) => Promise<PyodideInstance>) | undefined;
+        }) => Promise<unknown>) | undefined;
 
         try {
           const pyodideModule = await import('pyodide');
-          loadPyodideFn = pyodideModule.loadPyodide as typeof loadPyodideFn;
+          loadPyodideFn = pyodideModule.loadPyodide as unknown as typeof loadPyodideFn;
         } catch {
           await loadPyodideScript();
           loadPyodideFn = window.loadPyodide;
@@ -148,7 +144,7 @@ export default function EditorPage() {
         });
         
         if (isMounted) {
-          setPyodide(instance);
+          setPyodide(instance as PyodideInstance);
           setPyodideLoading(false);
         }
       } catch (error) {
