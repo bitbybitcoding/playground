@@ -239,7 +239,7 @@ export default function EditorPage() {
 
   // Auto-save code
   const saveCode = useCallback(async () => {
-    if (!challenge || challengeMissing) return;
+    if (!challenge) return;
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -264,10 +264,10 @@ export default function EditorPage() {
     } else {
       setSaveStatus('saved');
     }
-  }, [challenge, challengeMissing, code, challengeId]);
+  }, [challenge, code, challengeId]);
 
   useEffect(() => {
-    if (!challenge || challengeMissing || isChallengeLoading) {
+    if (!challenge || isChallengeLoading) {
       return;
     }
 
@@ -285,7 +285,7 @@ export default function EditorPage() {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [challenge, challengeMissing, isChallengeLoading, code, saveCode]);
+  }, [challenge, isChallengeLoading, code, saveCode]);
 
   // Scroll to bottom of output
   useEffect(() => {
@@ -398,7 +398,7 @@ export default function EditorPage() {
     );
   }
 
-  if (challengeMissing || !challenge) {
+  if (challengeMissing) {
     return (
       <div className="min-h-screen bg-background">
         <TopNavBar userRole={userRole} />
@@ -415,6 +415,10 @@ export default function EditorPage() {
         <BottomNavBar />
       </div>
     );
+  }
+
+  if (!challenge) {
+    return null;
   }
 
   return (

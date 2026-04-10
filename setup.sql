@@ -178,7 +178,10 @@ CREATE TABLE IF NOT EXISTS public.challenges (
 
 -- Backward-compatible schema upgrades
 ALTER TABLE public.challenges ADD COLUMN IF NOT EXISTS slug TEXT;
-ALTER TABLE public.challenges ADD COLUMN IF NOT EXISTS language TEXT NOT NULL DEFAULT 'python';
+ALTER TABLE public.challenges ADD COLUMN IF NOT EXISTS language TEXT;
+UPDATE public.challenges SET language = 'python' WHERE language IS NULL;
+ALTER TABLE public.challenges ALTER COLUMN language SET DEFAULT 'python';
+ALTER TABLE public.challenges ALTER COLUMN language SET NOT NULL;
 ALTER TABLE public.challenges ADD COLUMN IF NOT EXISTS hints JSONB DEFAULT '[]'::jsonb;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_challenges_slug_unique ON public.challenges(slug) WHERE slug IS NOT NULL;
@@ -583,7 +586,7 @@ FROM (
     ('stack-min', 'Min Stack', 'Design a stack that returns minimum in O(1).', 'advanced', 'python', 'Data Structures', 'Support push, pop, and get_min.', 'class MinStack:\n    def __init__(self):\n        self.stack = []\n        self.mins = []\n    def push(self, x):\n        self.stack.append(x)\n        self.mins.append(x if not self.mins else min(x, self.mins[-1]))\n    def pop(self):\n        self.mins.pop(); return self.stack.pop()\n    def get_min(self):\n        return self.mins[-1]\n\ns = MinStack(); s.push(3); s.push(1); s.push(2)\nprint(s.get_min())', '[{"input":"(lambda s: (s.push(3), s.push(1), s.push(2), s.get_min()))(MinStack())[-1]","expected":"1"}]', '1', 45, 30, TRUE),
     ('queue-with-stacks', 'Queue Using Two Stacks', 'Implement queue operations using two stacks.', 'intermediate', 'python', 'Data Structures', 'Implement enqueue/dequeue.', 'class MyQueue:\n    def __init__(self):\n        self.a = []\n        self.b = []\n    def enqueue(self, x):\n        self.a.append(x)\n    def dequeue(self):\n        if not self.b:\n            while self.a:\n                self.b.append(self.a.pop())\n        return self.b.pop() if self.b else None\n\nq = MyQueue(); q.enqueue(1); q.enqueue(2)\nprint(q.dequeue())', '[{"input":"(lambda q: (q.enqueue(1), q.enqueue(2), q.dequeue()))(MyQueue())[-1]","expected":"1"}]', '1', 35, 20, TRUE),
     ('roman-to-integer', 'Roman to Integer', 'Convert Roman numerals into integers.', 'beginner', 'python', 'Algorithms', 'Valid Roman numeral input.', 'def roman_to_int(s):\n    vals = {"I":1,"V":5,"X":10,"L":50,"C":100,"D":500,"M":1000}\n    total = 0\n    prev = 0\n    for ch in reversed(s):\n        val = vals[ch]\n        total += -val if val < prev else val\n        prev = val\n    return total\n\nprint(roman_to_int("MCMXCIV"))', '[{"input":"roman_to_int(\"III\")","expected":"3"},{"input":"roman_to_int(\"MCMXCIV\")","expected":"1994"}]', '1994', 25, 14, TRUE),
-    ('analyze-log-levels', 'Analyze Log Levels', 'Count INFO/WARN/ERROR log entries.', 'beginner', 'python', 'Python', 'Input is a list of log strings.', 'def count_levels(lines):\n    counts = {"INFO":0,"WARN":0,"ERROR":0}\n    for line in lines:\n        for key in counts:\n            if line.startswith(key):\n                counts[key] += 1\n    return counts\n\nprint(count_levels(["INFO a","ERROR b","WARN c","ERROR d"]))', '[{"input":"count_levels([\"INFO a\",\"ERROR b\",\"WARN c\",\"ERROR d\"])", "expected":"{\"INFO\": 1, \"WARN\": 1, \"ERROR\": 2}"}]', '{"INFO": 1, "WARN": 1, "ERROR": 2}', 20, 12, TRUE)
+    ('analyze-log-levels', 'Analyze Log Levels', 'Count INFO/WARN/ERROR log entries.', 'beginner', 'python', 'Python', 'Input is a list of log strings.', 'def count_levels(lines):\n    counts = {"INFO":0,"WARN":0,"ERROR":0}\n    for line in lines:\n        for key in counts:\n            if line.startswith(key):\n                counts[key] += 1\n    return counts\n\nprint(count_levels(["INFO a","ERROR b","WARN c","ERROR d"]))', '[{"input": "count_levels([\"INFO a\",\"ERROR b\",\"WARN c\",\"ERROR d\"])", "expected": "{\"INFO\": 1, \"WARN\": 1, \"ERROR\": 2}"}]', '{"INFO": 1, "WARN": 1, "ERROR": 2}', 20, 12, TRUE)
 ) AS seed(
     slug, title, description, difficulty, language, category, constraints, starter_code,
     test_cases, expected_output, time_estimate, points, is_published
