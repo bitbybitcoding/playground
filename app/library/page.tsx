@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createAdminSupabaseClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import TopNavBar from '@/components/TopNavBar';
 import BottomNavBar from '@/components/BottomNavBar';
@@ -16,7 +17,7 @@ export default async function LibraryPage() {
 
   const [
     { data: profile },
-    { data: challenges },
+    challengeResult,
     { data: userProgress },
     { data: pathways },
   ] = await Promise.all([
@@ -38,6 +39,26 @@ export default async function LibraryPage() {
       .select('*')
       .eq('is_active', true),
   ]);
+
+  let challenges = challengeResult.data || [];
+
+  if ((challengeResult.error || challenges.length === 0) && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const adminSupabase = createAdminSupabaseClient();
+    const { data: adminChallenges, error: adminChallengesError } = await adminSupabase
+      .from('challenges')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (adminChallengesError) {
+      console.error('Failed to fetch challenges with admin fallback:', adminChallengesError.message);
+    } else {
+      challenges = adminChallenges || [];
+    }
+  }
+
+  if (challengeResult.error) {
+    console.error('Failed to fetch challenges for library page:', challengeResult.error.message);
+  }
 
   // Get challenge status
   const getChallengeStatus = (challengeId: string) => {
