@@ -18,14 +18,7 @@ export async function middleware(request: NextRequest) {
   const isAuthPage = pathname === '/login' || pathname === '/signup';
   const hasSupabaseAuthCookie = request.cookies
     .getAll()
-    .some(({ name }) => name.startsWith('sb-') && name.includes('auth-token'));
-
-  // Fast path for public non-auth pages — skip auth network checks entirely.
-  if (isPublicRoute && !isAuthPage) {
-    return NextResponse.next({
-      request,
-    });
-  }
+    .some(({ name }) => name.startsWith('sb-'));
 
   // Fast path for visitors with no auth cookie.
   if (!hasSupabaseAuthCookie) {
