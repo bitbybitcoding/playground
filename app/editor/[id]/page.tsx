@@ -84,6 +84,14 @@ export default function EditorPage() {
     await new Promise<void>((resolve, reject) => {
       const existingScript = document.querySelector<HTMLScriptElement>('script[data-pyodide-runtime="true"]');
       if (existingScript) {
+        if (window.loadPyodide) {
+          resolve();
+          return;
+        }
+        if (existingScript.dataset.loadState === 'error') {
+          reject(new Error('Failed to load Pyodide runtime script'));
+          return;
+        }
         existingScript.addEventListener('load', () => resolve(), { once: true });
         existingScript.addEventListener('error', () => reject(new Error('Failed to load Pyodide runtime script')), { once: true });
         return;
@@ -93,8 +101,15 @@ export default function EditorPage() {
       script.src = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js';
       script.async = true;
       script.dataset.pyodideRuntime = 'true';
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Failed to load Pyodide runtime script'));
+      script.dataset.loadState = 'loading';
+      script.onload = () => {
+        script.dataset.loadState = 'loaded';
+        resolve();
+      };
+      script.onerror = () => {
+        script.dataset.loadState = 'error';
+        reject(new Error('Failed to load Pyodide runtime script'));
+      };
       document.head.appendChild(script);
     });
   }, []);
