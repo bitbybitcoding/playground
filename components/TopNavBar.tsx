@@ -41,6 +41,7 @@ export default function TopNavBar({ userRole }: TopNavBarProps) {
   const isActive = (path: string) => {
     if (path === '/dashboard' && pathname === '/dashboard') return true;
     if (path === '/library' && pathname === '/library') return true;
+    if (path === '/editor' && pathname.startsWith('/editor')) return true;
     if (path === '/workspace' && pathname === '/workspace') return true;
     if (path === '/admin' && pathname.startsWith('/admin')) return true;
     return false;
@@ -49,6 +50,7 @@ export default function TopNavBar({ userRole }: TopNavBarProps) {
   const navLinks = [
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/library', label: 'Library' },
+    { href: '/editor', label: 'Editor' },
     { href: '/workspace', label: 'Projects' },
     ...(userRole === 'admin' ? [{ href: '/admin', label: 'Admin' }] : []),
   ];
