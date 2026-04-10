@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import TopNavBar from '@/components/TopNavBar';
 import BottomNavBar from '@/components/BottomNavBar';
 import Link from 'next/link';
-import { Search, ArrowRight, CheckCircle, Clock, MoreHorizontal, Plus, Sparkles } from 'lucide-react';
+import { Search, ArrowRight, CheckCircle, Clock, MoreHorizontal, Sparkles } from 'lucide-react';
 
 export default async function LibraryPage() {
   const supabase = await createServerSupabaseClient();
@@ -76,27 +76,23 @@ export default async function LibraryPage() {
             {/* Pathways Horizontal Scroll */}
             <div className="flex-1 overflow-hidden w-full">
               <h3 className="font-label text-xs font-bold uppercase tracking-[0.2em] mb-4 text-outline">Active Pathways</h3>
-              <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
-                {pathways?.map((pathway) => (
-                  <div 
-                    key={pathway.id}
+                <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                  {pathways?.map((pathway) => (
+                    <div 
+                      key={pathway.id}
                     className="flex-shrink-0 bg-surface-container-lowest editorial-shadow p-4 md:p-6 rounded-xl border-l-4 border-primary w-56 md:w-64"
                   >
                     <h4 className="font-headline text-base md:text-lg font-bold mb-1">{pathway.name}</h4>
                     <p className="text-sm text-on-surface-variant mb-4">
                       {pathway.total_challenges} Challenges
                     </p>
-                    <div className="h-1.5 w-full bg-surface-container-low rounded-full">
-                      <div className="h-full bg-primary rounded-full" style={{ width: '0%' }}></div>
+                      <div className="h-1.5 w-full bg-surface-container-low rounded-full">
+                        <div className="h-full bg-primary rounded-full" style={{ width: '0%' }}></div>
+                      </div>
                     </div>
-                  </div>
-                ))}
-                <div className="flex-shrink-0 bg-surface-container-low p-4 md:p-6 rounded-xl w-56 md:w-64 flex flex-col items-center justify-center border-2 border-dashed border-outline-variant text-outline cursor-pointer hover:bg-surface-container-high transition-colors">
-                  <Plus className="w-6 h-6 mb-1" />
-                  <span className="text-xs font-bold uppercase tracking-widest">New Pathway</span>
+                  ))}
                 </div>
               </div>
-            </div>
             
             {/* Hard Filters */}
             <div className="flex gap-2 pb-4 w-full md:w-auto overflow-x-auto">
@@ -222,19 +218,6 @@ export default async function LibraryPage() {
           )}
         </section>
 
-        {/* Empty State / Load More */}
-        {challenges && challenges.length > 0 && (
-          <div className="max-w-6xl mx-auto mt-12 md:mt-16 text-center border-t border-outline-variant/10 pt-12 md:pt-16">
-            <p className="font-headline text-xl md:text-2xl text-outline italic mb-8">
-              Exploring the depths of the library...
-            </p>
-            <button className="group flex items-center gap-4 mx-auto text-on-surface hover:text-primary transition-colors">
-              <span className="h-px w-12 bg-outline-variant group-hover:bg-primary transition-colors"></span>
-              <span className="font-bold uppercase tracking-widest text-xs">Load More Archives</span>
-              <span className="h-px w-12 bg-outline-variant group-hover:bg-primary transition-colors"></span>
-            </button>
-          </div>
-        )}
       </main>
 
       <BottomNavBar />
