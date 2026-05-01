@@ -1,5 +1,4 @@
-import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { createAdminSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, createAdminSupabaseClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import TopNavBar from '@/components/TopNavBar';
 import BottomNavBar from '@/components/BottomNavBar';
@@ -15,9 +14,11 @@ export default async function LibraryPage() {
     redirect('/login');
   }
 
+  const adminSupabase = createAdminSupabaseClient();
+
   const [
     { data: profile },
-    challengeResult,
+    { data: challenges, error: challengesError },
     { data: userProgress },
     { data: pathways },
   ] = await Promise.all([
@@ -26,7 +27,8 @@ export default async function LibraryPage() {
       .select('*')
       .eq('id', user.id)
       .single(),
-    supabase
+    // Use admin client so challenges are always readable regardless of RLS policies
+    adminSupabase
       .from('challenges')
       .select('*')
       .order('created_at', { ascending: false }),
@@ -40,24 +42,8 @@ export default async function LibraryPage() {
       .eq('is_active', true),
   ]);
 
-  let challenges = challengeResult.data || [];
-
-  if (challengeResult.error) {
-    console.error('Primary library challenges query failed, attempting admin fallback:', challengeResult.error.message);
-  }
-
-  if ((challengeResult.error || challenges.length === 0) && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const adminSupabase = createAdminSupabaseClient();
-    const { data: adminChallenges, error: adminChallengesError } = await adminSupabase
-      .from('challenges')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (adminChallengesError) {
-      console.error('Failed to fetch challenges with admin fallback:', adminChallengesError.message);
-    } else {
-      challenges = adminChallenges || [];
-    }
+  if (challengesError) {
+    console.error('Failed to fetch challenges:', challengesError.message);
   }
 
   // Get challenge status

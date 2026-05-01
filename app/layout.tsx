@@ -24,6 +24,13 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" 
           rel="stylesheet" 
         />
+        {/* Prefetch Pyodide so it starts downloading before the editor page loads */}
+        <link
+          rel="prefetch"
+          href="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"
+          as="script"
+          crossOrigin="anonymous"
+        />
       </head>
       <body className="bg-background text-on-background font-body selection:bg-primary-fixed selection:text-on-primary-fixed antialiased">
         {children}
