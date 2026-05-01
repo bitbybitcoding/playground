@@ -1,9 +1,5 @@
 import { createAdminSupabaseClient, createServerSupabaseClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import TopNavBar from '@/components/TopNavBar';
-import BottomNavBar from '@/components/BottomNavBar';
-import { AlertCircle } from 'lucide-react';
-import Link from 'next/link';
 import EditorClient from './EditorClient';
 
 export default async function EditorPage({
@@ -32,22 +28,7 @@ export default async function EditorPage({
     .maybeSingle();
 
   if (!challenge) {
-    return (
-      <div className="min-h-screen bg-background">
-        <TopNavBar />
-        <main className="pt-24 px-4 md:px-8">
-          <div className="max-w-3xl mx-auto text-center py-20">
-            <AlertCircle className="w-10 h-10 mx-auto text-slate-400 mb-4" />
-            <h1 className="font-display text-2xl font-bold mb-2">Challenge not found</h1>
-            <p className="text-slate-500 mb-6">This challenge is unavailable right now.</p>
-            <Link href="/library" className="text-primary font-bold hover:underline">
-              Back to Library
-            </Link>
-          </div>
-        </main>
-        <BottomNavBar />
-      </div>
-    );
+    redirect('/editor');
   }
 
   return <EditorClient challengeId={challengeId} initialChallenge={challenge} />;
