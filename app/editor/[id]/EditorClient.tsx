@@ -467,17 +467,12 @@ export default function EditorClient({ challengeId, initialChallenge }: EditorCl
                 disabled={isRunning || pyodideLoading}
                 className="flex-1 bg-bit-green text-[#1b1c1a] py-3 rounded-lg font-label font-bold hover:brightness-105 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                {isRunning ? (
+                {isRunning || pyodideLoading ? (
                   <span className="w-4 h-4 border-2 border-[#1b1c1a]/30 border-t-[#1b1c1a] rounded-full animate-spin" />
-                ) : pyodideLoading ? (
-                  <>
-                    <span className="w-4 h-4 border-2 border-[#1b1c1a]/30 border-t-[#1b1c1a] rounded-full animate-spin" />
-                    Loading runtime...
-                  </>
                 ) : (
                   <Play className="w-4 h-4" />
                 )}
-                {!isRunning && !pyodideLoading && 'Run Code'}
+                {isRunning ? null : pyodideLoading ? 'Loading runtime...' : 'Run Code'}
               </button>
               <button
                 onClick={submitSolution}
