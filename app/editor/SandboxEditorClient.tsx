@@ -180,20 +180,22 @@ export default function SandboxEditorClient() {
                     {pyodideLoading ? 'Loading Python runtime...' : 'Click "Run Code" to execute...'}
                   </p>
                 ) : (
-                  output.map((line, i) => (
-                    <p
-                      key={i}
-                      className={
-                        line.startsWith('Error:')
-                          ? 'text-bit-red'
-                          : line.startsWith('$')
-                          ? 'text-slate-500'
-                          : 'text-tertiary-fixed'
-                      }
-                    >
-                      {line}
-                    </p>
-                  ))
+                  output
+                    .filter(line => activeTab === 'terminal' || !line.startsWith('$'))
+                    .map((line, i) => (
+                      <p
+                        key={i}
+                        className={
+                          line.startsWith('Error:')
+                            ? 'text-bit-red'
+                            : line.startsWith('$')
+                            ? 'text-slate-500'
+                            : 'text-tertiary-fixed'
+                        }
+                      >
+                        {line}
+                      </p>
+                    ))
                 )}
                 {isRunning && <p className="text-slate-500 animate-pulse">_</p>}
               </div>
