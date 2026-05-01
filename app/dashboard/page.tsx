@@ -78,7 +78,7 @@ export default async function DashboardPage() {
                 <span className="sm:hidden">Resume</span>
               </Link>
               <Link 
-                href={resumeChallengeId ? `/editor/${resumeChallengeId}` : '/library'}
+                href="/editor"
                 className="px-4 md:px-6 py-3 bg-surface-container-highest text-on-surface font-bold rounded-lg transition-all active:scale-95 flex items-center gap-2 text-sm md:text-base"
               >
                 <Code className="w-4 h-4" />
