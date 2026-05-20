@@ -45,6 +45,21 @@ export default async function DashboardPage() {
   const firstName = profile?.full_name?.split(' ')[0] || 'Coder';
   const completedChallenges = userProgress?.filter(p => p.status === 'completed').length || 0;
   const inProgressChallenges = userProgress?.filter(p => p.status === 'in_progress').length || 0;
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weeklyCompletedChallenges = userProgress?.filter(
+    (progress) =>
+      progress.status === 'completed' &&
+      progress.completed_at &&
+      new Date(progress.completed_at) >= weekAgo
+  ) || [];
+  const weeklyMinutes = weeklyCompletedChallenges.reduce(
+    (total, progress) => total + (progress.challenges?.time_estimate ?? 0),
+    0
+  );
+  const weeklyHours = Math.round(weeklyMinutes / 60);
+  const weeklyHoursGoal = 10;
+  const weeklyTasksGoal = 15;
   const activeChallenge =
     userProgress?.find((p) => p.status === 'in_progress')?.challenges ||
     userProgress?.[0]?.challenges ||
@@ -144,24 +159,24 @@ export default async function DashboardPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs font-bold uppercase tracking-wider">
                     <span className="text-slate-500">Coding Hours</span>
-                    <span className="text-primary">{profile?.weekly_hours || 0} / 10h</span>
+                    <span className="text-primary">{weeklyHours} / {weeklyHoursGoal}h</span>
                   </div>
                   <div className="h-1.5 w-full bg-surface-container-highest rounded-full">
                     <div 
                       className="h-full bg-primary rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(((profile?.weekly_hours || 0) / 10) * 100, 100)}%` }}
+                      style={{ width: `${Math.min((weeklyHours / weeklyHoursGoal) * 100, 100)}%` }}
                     ></div>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs font-bold uppercase tracking-wider">
                     <span className="text-slate-500">Tasks Completed</span>
-                    <span className="text-tertiary">{completedChallenges} / 15</span>
+                    <span className="text-tertiary">{weeklyCompletedChallenges.length} / {weeklyTasksGoal}</span>
                   </div>
                   <div className="h-1.5 w-full bg-surface-container-highest rounded-full">
                     <div 
                       className="h-full bg-tertiary-container rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min((completedChallenges / 15) * 100, 100)}%` }}
+                      style={{ width: `${Math.min((weeklyCompletedChallenges.length / weeklyTasksGoal) * 100, 100)}%` }}
                     ></div>
                   </div>
                 </div>
