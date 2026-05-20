@@ -42,7 +42,7 @@ export default function LandingPage() {
                 <span className="text-primary italic">bit by bit.</span>
               </h1>
               <p className="text-lg text-on-surface-variant max-w-lg mb-8 leading-relaxed">
-                Democratizing advanced coding education for all Singaporean youth. 
+                Opening the doors of coding education for all Singaporean youth. 
                 No fees. No barriers. Just curiosity and commitment.
               </p>
               <div className="flex flex-wrap gap-4">
@@ -98,16 +98,16 @@ print(result)`}</code>
         <div className="max-w-7xl mx-auto px-6 md:px-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="text-center">
-              <p className="font-display text-4xl font-black text-primary mb-2">28+</p>
+              <p className="font-display text-4xl font-black text-primary mb-2">60+</p>
               <p className="font-label text-sm text-slate-500 uppercase tracking-wider">Students</p>
             </div>
             <div className="text-center">
-              <p className="font-display text-4xl font-black text-tertiary mb-2">11</p>
+              <p className="font-display text-4xl font-black text-tertiary mb-2">16</p>
               <p className="font-label text-sm text-slate-500 uppercase tracking-wider">Tutors</p>
             </div>
             <div className="text-center">
               <p className="font-display text-4xl font-black text-secondary mb-2">12</p>
-              <p className="font-label text-sm text-slate-500 uppercase tracking-wider">Week Program</p>
+              <p className="font-label text-sm text-slate-500 uppercase tracking-wider">Week Programme</p>
             </div>
             <div className="text-center">
               <p className="font-display text-4xl font-black text-bit-lavender mb-2">100%</p>
@@ -127,7 +127,7 @@ print(result)`}</code>
             </h2>
             <p className="text-on-surface-variant max-w-2xl mx-auto">
               We&apos;re not another paid enrichment centre. We&apos;re a community groundup 
-              filling the gap between basic government programs and expensive private courses.
+              filling the gap between basic government programmes and expensive private courses.
             </p>
           </div>
 
@@ -138,7 +138,7 @@ print(result)`}</code>
               </div>
               <h3 className="font-display text-xl font-bold mb-3">Real Python, Real Projects</h3>
               <p className="text-on-surface-variant text-sm leading-relaxed">
-                Learn industry-grade Python from variables to Flask, SQL, and AI/ML. 
+                Learn industry-grade Python from variables to Flask, SQL, and AI/ML. When you&apos;re done, learn other languages too!
                 Build real applications, not toy examples.
               </p>
             </div>
@@ -160,7 +160,7 @@ print(result)`}</code>
               </div>
               <h3 className="font-display text-xl font-bold mb-3">Peer-Powered Learning</h3>
               <p className="text-on-surface-variant text-sm leading-relaxed">
-                Learn from H2 Computing alumni and NUS CS students who&apos;ve been where you are. 
+                Learn from ex-computing students, current CS students and industry professionals who have been where you are. 
                 Small groups, personal attention.
               </p>
             </div>
@@ -184,12 +184,12 @@ print(result)`}</code>
                 <Terminal className="w-5 h-5 text-primary" />
                 <span className="font-label text-xs font-bold uppercase tracking-wider text-primary">Term 1</span>
               </div>
-              <h3 className="font-display text-xl font-bold mb-2">Python: Language & Application</h3>
+              <h3 className="font-display text-xl font-bold mb-2">Python: Taster</h3>
               <p className="text-on-surface-variant text-sm mb-4">
-                Variables, data types, control flow, functions, file I/O, and OOP fundamentals.
+                Variables, data types, control flow.
               </p>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-label text-slate-500">12 weeks • No prerequisites</span>
+                <span className="text-xs font-label text-slate-500">4 weeks • No prerequisites</span>
               </div>
             </div>
 
@@ -198,9 +198,9 @@ print(result)`}</code>
                 <BookOpen className="w-5 h-5 text-tertiary" />
                 <span className="font-label text-xs font-bold uppercase tracking-wider text-tertiary">Term 2</span>
               </div>
-              <h3 className="font-display text-xl font-bold mb-2">Flask & Front-End</h3>
+              <h3 className="font-display text-xl font-bold mb-2">Python: Beginner -> Intermediate</h3>
               <p className="text-on-surface-variant text-sm mb-4">
-                HTML/CSS, JavaScript, Flask framework, Jinja2 templates, and database integration.
+                Functions, file I/O, and OOP fundamentals.
               </p>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-label text-slate-500">12 weeks • Requires Term 1</span>
@@ -212,12 +212,27 @@ print(result)`}</code>
                 <Trophy className="w-5 h-5 text-bit-lavender" />
                 <span className="font-label text-xs font-bold uppercase tracking-wider text-bit-lavender">Term 3</span>
               </div>
-              <h3 className="font-display text-xl font-bold mb-2">SQL & Databases</h3>
+              <h3 className="font-display text-xl font-bold mb-2">Python: Intermediate -> Advanced</h3>
               <p className="text-on-surface-variant text-sm mb-4">
-                Relational databases, SQL fundamentals, SQLite integration with Python.
+                HTML/CSS, JavaScript, Flask framework, Jinja2 templates, and database integration with SQLite and Python.
               </p>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-label text-slate-500">10 weeks • Requires Terms 1-2</span>
+                <span className="text-xs font-label text-slate-500">12 weeks • Requires Terms 1 & 2</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-surface-container-lowest p-8 rounded-2xl border-l-4 border-bit-lavender opacity-50">
+              <div className="flex items-center gap-3 mb-4">
+                <Trophy className="w-5 h-5 text-bit-lavender" />
+                <span className="font-label text-xs font-bold uppercase tracking-wider text-bit-lavender">Term 4</span>
+              </div>
+              <h3 className="font-display text-xl font-bold mb-2">Python: Applications with ML</h3>
+              <p className="text-on-surface-variant text-sm mb-4">
+                Pandas, Scikit-learn and basic ML with Python.
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-label text-slate-500">12 weeks • Requires Terms 1, 2 & 3</span>
               </div>
             </div>
           </div>
@@ -232,7 +247,7 @@ print(result)`}</code>
               <div className="bg-surface-container-low p-8 rounded-2xl relative">
                 <div className="absolute -top-4 -left-4 text-6xl text-primary opacity-20 font-display">&ldquo;</div>
                 <blockquote className="font-display text-2xl md:text-3xl italic text-on-surface leading-relaxed mb-6">
-                  I made a promise to myself last year. I will let every kid who wants to learn to code learn to code, regardless of money, regardless of background.
+                  I made a promise to myself. I will let every kid who wants to learn to code learn to code, regardless of money, regardless of background, regardless of anything except their own passion.
                 </blockquote>
                 <p className="text-on-surface-variant">
                   Because that door was once closed for me, and now I want to open it for all the kids after me.
@@ -255,9 +270,8 @@ print(result)`}</code>
                   hundreds of dollars monthly to acquire.
                 </p>
                 <p>
-                  He later taught himself to code through free online resources on a cheap laptop received as a 
-                  14th birthday present, passed the H2 Computing subject test, and went on to study H2 Computing 
-                  at Victoria Junior College.
+                  He later taught himself to code through free online resources on a cheap laptop, and went on 
+                  to study H2 Computing at Victoria Junior College.
                 </p>
                 <p>
                   In 2025, he and co-founder Brian realized many shared the same story: the courses that bridge 
@@ -290,7 +304,7 @@ print(result)`}</code>
               <ArrowRight className="w-5 h-5" />
             </Link>
             <Link 
-              href="mailto:info.bbbcoding@gmail.com" 
+              href="bbbcoding.org/contact" 
               className="bg-transparent border-2 border-white text-white px-8 py-4 rounded-xl font-label font-bold hover:bg-white/10 transition-colors"
             >
               Contact Us
