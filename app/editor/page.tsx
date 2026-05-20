@@ -4,6 +4,8 @@ import TopNavBar from '@/components/TopNavBar';
 import BottomNavBar from '@/components/BottomNavBar';
 import SandboxEditorClient from './SandboxEditorClient';
 
+export const dynamic = 'force-dynamic';
+
 export default async function SandboxEditorPage() {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();

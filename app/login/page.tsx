@@ -1,19 +1,38 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default function LoginPage() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(
+    () => (typeof window === 'undefined' ? null : createClient()),
+    []
+  );
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const errorCode = new URLSearchParams(window.location.search).get('error');
+    if (!errorCode) return;
+    const errorMessages: Record<string, string> = {
+      not_allowed: 'This Google account is not approved for access.',
+      oauth_failed: 'Google sign-in failed. Please try again.',
+      missing_code: 'Google sign-in failed. Please try again.',
+      missing_email: 'Google sign-in did not return an email address.',
+    };
+    setError(errorMessages[errorCode] ?? 'Sign-in failed. Please try again.');
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,6 +40,10 @@ export default function LoginPage() {
     setError(null);
 
     try {
+      if (!supabase) {
+        setError('Supabase is not available. Please refresh and try again.');
+        return;
+      }
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -37,6 +60,32 @@ export default function LoginPage() {
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setOauthLoading(true);
+    setError(null);
+
+    if (!supabase) {
+      setError('Supabase is not available. Please refresh and try again.');
+      setOauthLoading(false);
+      return;
+    }
+
+    const startedAt = Date.now();
+    const redirectTo = `${window.location.origin}/auth/callback?next=/dashboard&startedAt=${startedAt}`;
+
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo,
+      },
+    });
+
+    if (oauthError) {
+      setError(oauthError.message);
+      setOauthLoading(false);
     }
   };
 
@@ -67,6 +116,20 @@ export default function LoginPage() {
               <p className="text-sm text-on-error-container">{error}</p>
             </div>
           )}
+
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={oauthLoading || loading}
+            className="w-full mb-6 bg-surface-container-high text-on-surface py-3.5 rounded-lg font-label font-bold hover:bg-surface-container-highest transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {oauthLoading ? (
+              <span className="w-5 h-5 border-2 border-slate-500/30 border-t-slate-500 rounded-full animate-spin" />
+            ) : (
+              <span className="text-sm font-bold">G</span>
+            )}
+            Sign in with Google
+          </button>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>

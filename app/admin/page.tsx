@@ -2,16 +2,18 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import TopNavBar from '@/components/TopNavBar';
 import Link from 'next/link';
-import { 
-  Users, 
-  Code, 
-  Key, 
-  TrendingUp, 
+import {
+  Users,
+  Code,
+  Key,
+  TrendingUp,
   ArrowRight,
   CheckCircle,
   Clock,
   AlertCircle
 } from 'lucide-react';
+
+export const dynamic = 'force-dynamic';
 
 export default async function AdminPage() {
   const supabase = await createServerSupabaseClient();

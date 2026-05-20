@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import TopNavBar from '@/components/TopNavBar';
@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 interface InviteCode {
   id: string;
   code: string;
@@ -33,7 +35,10 @@ interface InviteCode {
 
 export default function AdminInviteCodesPage() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(
+    () => (typeof window === 'undefined' ? null : createClient()),
+    []
+  );
   const [codes, setCodes] = useState<InviteCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,6 +53,7 @@ export default function AdminInviteCodesPage() {
   }, []);
 
   async function checkAdminAndFetchCodes() {
+    if (!supabase) return;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       router.push('/login');
@@ -70,6 +76,7 @@ export default function AdminInviteCodesPage() {
   }
 
   async function fetchCodes() {
+    if (!supabase) return;
     setLoading(true);
     const { data } = await supabase
       .from('invite_codes')
@@ -83,6 +90,7 @@ export default function AdminInviteCodesPage() {
   }
 
   async function generateCodes() {
+    if (!supabase) return;
     const newCodes = [];
     for (let i = 0; i < generateCount; i++) {
       newCodes.push({
@@ -106,6 +114,7 @@ export default function AdminInviteCodesPage() {
   }
 
   async function revokeCode(id: string) {
+    if (!supabase) return;
     if (!confirm('Are you sure you want to revoke this code?')) return;
 
     const { error } = await supabase

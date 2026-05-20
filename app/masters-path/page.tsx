@@ -5,6 +5,8 @@ import BottomNavBar from '@/components/BottomNavBar';
 import Link from 'next/link';
 import { ArrowRight, CheckCircle, Clock } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default async function MastersPathPage() {
   const MAX_CARD_CHALLENGES = 8;
   const supabase = await createServerSupabaseClient();

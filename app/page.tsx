@@ -178,7 +178,7 @@ print(result)`}</code>
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-surface-container-lowest p-8 rounded-2xl border-l-4 border-primary">
               <div className="flex items-center gap-3 mb-4">
                 <Terminal className="w-5 h-5 text-primary" />
@@ -198,7 +198,7 @@ print(result)`}</code>
                 <BookOpen className="w-5 h-5 text-tertiary" />
                 <span className="font-label text-xs font-bold uppercase tracking-wider text-tertiary">Term 2</span>
               </div>
-              <h3 className="font-display text-xl font-bold mb-2">Python: Beginner -> Intermediate</h3>
+              <h3 className="font-display text-xl font-bold mb-2">Python: Beginner → Intermediate</h3>
               <p className="text-on-surface-variant text-sm mb-4">
                 Functions, file I/O, and OOP fundamentals.
               </p>
@@ -212,7 +212,7 @@ print(result)`}</code>
                 <Trophy className="w-5 h-5 text-bit-lavender" />
                 <span className="font-label text-xs font-bold uppercase tracking-wider text-bit-lavender">Term 3</span>
               </div>
-              <h3 className="font-display text-xl font-bold mb-2">Python: Intermediate -> Advanced</h3>
+              <h3 className="font-display text-xl font-bold mb-2">Python: Intermediate → Advanced</h3>
               <p className="text-on-surface-variant text-sm mb-4">
                 HTML/CSS, JavaScript, Flask framework, Jinja2 templates, and database integration with SQLite and Python.
               </p>
@@ -220,9 +220,8 @@ print(result)`}</code>
                 <span className="text-xs font-label text-slate-500">12 weeks • Requires Terms 1 & 2</span>
               </div>
             </div>
-          </div>
 
-          <div className="bg-surface-container-lowest p-8 rounded-2xl border-l-4 border-bit-lavender opacity-50">
+            <div className="bg-surface-container-lowest p-8 rounded-2xl border-l-4 border-bit-lavender opacity-50">
               <div className="flex items-center gap-3 mb-4">
                 <Trophy className="w-5 h-5 text-bit-lavender" />
                 <span className="font-label text-xs font-bold uppercase tracking-wider text-bit-lavender">Term 4</span>

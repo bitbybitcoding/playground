@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import TopNavBar from '@/components/TopNavBar';
@@ -16,6 +16,8 @@ import {
   X
 } from 'lucide-react';
 import Link from 'next/link';
+
+export const dynamic = 'force-dynamic';
 
 type Difficulty = 'beginner' | 'intermediate' | 'advanced';
 
@@ -65,7 +67,10 @@ const defaultForm: FormData = {
 
 export default function AdminChallengesPage() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(
+    () => (typeof window === 'undefined' ? null : createClient()),
+    []
+  );
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -79,6 +84,7 @@ export default function AdminChallengesPage() {
   }, []);
 
   async function checkAdminAndFetchChallenges() {
+    if (!supabase) return;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       router.push('/login');
@@ -101,6 +107,7 @@ export default function AdminChallengesPage() {
   }
 
   async function fetchChallenges() {
+    if (!supabase) return;
     setLoading(true);
     const { data } = await supabase
       .from('challenges')
@@ -151,6 +158,11 @@ export default function AdminChallengesPage() {
       test_cases: parsedTestCases,
     };
 
+    if (!supabase) {
+      alert('Supabase is not available. Please refresh and try again.');
+      return;
+    }
+
     if (editingChallenge) {
       const { error } = await supabase
         .from('challenges')
@@ -178,6 +190,7 @@ export default function AdminChallengesPage() {
 
   async function handleDelete(id: string) {
     if (!confirm('Are you sure you want to delete this challenge?')) return;
+    if (!supabase) return;
 
     const { error } = await supabase
       .from('challenges')
@@ -193,6 +206,7 @@ export default function AdminChallengesPage() {
   }
 
   async function togglePublish(id: string, currentStatus: boolean) {
+    if (!supabase) return;
     const { error } = await supabase
       .from('challenges')
       .update({ is_published: !currentStatus })

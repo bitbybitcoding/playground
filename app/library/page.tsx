@@ -5,6 +5,8 @@ import BottomNavBar from '@/components/BottomNavBar';
 import Link from 'next/link';
 import { Search, ArrowRight, CheckCircle, Clock, MoreHorizontal, Sparkles } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default async function LibraryPage() {
   const supabase = await createServerSupabaseClient();
   
@@ -21,6 +23,7 @@ export default async function LibraryPage() {
     { data: challenges, error: challengesError },
     { data: userProgress },
     { data: pathways },
+    { data: userPathwayProgress },
   ] = await Promise.all([
     supabase
       .from('profiles')
@@ -40,6 +43,10 @@ export default async function LibraryPage() {
       .from('pathways')
       .select('*')
       .eq('is_active', true),
+    supabase
+      .from('user_pathway_progress')
+      .select('pathway_id, completed_challenges')
+      .eq('user_id', user.id),
   ]);
 
   if (challengesError) {
@@ -56,6 +63,14 @@ export default async function LibraryPage() {
   const beginnerChallenges = challenges?.filter(c => c.difficulty === 'beginner') || [];
   const intermediateChallenges = challenges?.filter(c => c.difficulty === 'intermediate') || [];
   const advancedChallenges = challenges?.filter(c => c.difficulty === 'advanced') || [];
+  const progressByPathwayId = new Map(
+    (userPathwayProgress || []).map((progress) => [progress.pathway_id, progress.completed_challenges])
+  );
+  const getPathwayProgress = (pathwayId: string, totalChallenges: number) => {
+    const completed = progressByPathwayId.get(pathwayId) ?? 0;
+    if (totalChallenges <= 0) return 0;
+    return Math.min(Math.round((completed / totalChallenges) * 100), 100);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -93,8 +108,14 @@ export default async function LibraryPage() {
                       {pathway.total_challenges} Challenges
                     </p>
                       <div className="h-1.5 w-full bg-surface-container-low rounded-full">
-                        <div className="h-full bg-primary rounded-full" style={{ width: '0%' }}></div>
+                        <div
+                          className="h-full bg-primary rounded-full"
+                          style={{ width: `${getPathwayProgress(pathway.id, pathway.total_challenges)}%` }}
+                        ></div>
                       </div>
+                      <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-primary">
+                        {getPathwayProgress(pathway.id, pathway.total_challenges)}% complete
+                      </p>
                     </div>
                   ))}
                 </div>
