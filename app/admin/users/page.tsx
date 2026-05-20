@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import TopNavBar from '@/components/TopNavBar';
@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 interface UserProfile {
   id: string;
   email: string;
@@ -30,7 +32,10 @@ interface UserProfile {
 
 export default function AdminUsersPage() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(
+    () => (typeof window === 'undefined' ? null : createClient()),
+    []
+  );
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -41,6 +46,7 @@ export default function AdminUsersPage() {
   }, []);
 
   async function checkAdminAndFetchUsers() {
+    if (!supabase) return;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       router.push('/login');
@@ -63,6 +69,7 @@ export default function AdminUsersPage() {
   }
 
   async function fetchUsers() {
+    if (!supabase) return;
     setLoading(true);
     const { data } = await supabase
       .from('profiles')
@@ -78,6 +85,7 @@ export default function AdminUsersPage() {
   async function toggleRole(userId: string, currentRole: string) {
     const newRole = currentRole === 'admin' ? 'student' : 'admin';
     
+    if (!supabase) return;
     const { error } = await supabase
       .from('profiles')
       .update({ role: newRole })

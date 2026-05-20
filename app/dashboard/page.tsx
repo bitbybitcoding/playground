@@ -5,6 +5,8 @@ import BottomNavBar from '@/components/BottomNavBar';
 import { Play, Code, FileText, Database, CheckCircle, Clock, TrendingUp, Users } from 'lucide-react';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardPage() {
   const supabase = await createServerSupabaseClient();
   

@@ -5,6 +5,8 @@ import BottomNavBar from '@/components/BottomNavBar';
 import Link from 'next/link';
 import { Search, ArrowRight, CheckCircle, Clock, MoreHorizontal, Sparkles } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default async function LibraryPage() {
   const supabase = await createServerSupabaseClient();
   

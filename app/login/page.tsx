@@ -1,15 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const supabase = createClient();
+  const supabase = useMemo(
+    () => (typeof window === 'undefined' ? null : createClient()),
+    []
+  );
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -18,7 +22,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const errorCode = searchParams.get('error');
+    if (typeof window === 'undefined') return;
+    const errorCode = new URLSearchParams(window.location.search).get('error');
     if (!errorCode) return;
     const errorMessages: Record<string, string> = {
       not_allowed: 'This Google account is not approved for access.',
@@ -27,7 +32,7 @@ export default function LoginPage() {
       missing_email: 'Google sign-in did not return an email address.',
     };
     setError(errorMessages[errorCode] ?? 'Sign-in failed. Please try again.');
-  }, [searchParams]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +40,10 @@ export default function LoginPage() {
     setError(null);
 
     try {
+      if (!supabase) {
+        setError('Supabase is not available. Please refresh and try again.');
+        return;
+      }
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -57,6 +66,12 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setOauthLoading(true);
     setError(null);
+
+    if (!supabase) {
+      setError('Supabase is not available. Please refresh and try again.');
+      setOauthLoading(false);
+      return;
+    }
 
     const startedAt = Date.now();
     const redirectTo = `${window.location.origin}/auth/callback?next=/dashboard&startedAt=${startedAt}`;

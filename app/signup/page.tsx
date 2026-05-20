@@ -1,14 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Eye, EyeOff, Mail, Lock, Key, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default function SignupPage() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(
+    () => (typeof window === 'undefined' ? null : createClient()),
+    []
+  );
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [inviteCode, setInviteCode] = useState('');
@@ -24,6 +29,11 @@ export default function SignupPage() {
     setError(null);
 
     try {
+      if (!supabase) {
+        setError('Supabase is not available. Please refresh and try again.');
+        setLoading(false);
+        return;
+      }
       // Step 1: Validate invite code
       const { data: codeData, error: codeError } = await supabase
         .from('invite_codes')

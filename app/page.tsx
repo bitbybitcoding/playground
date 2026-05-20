@@ -235,7 +235,6 @@ print(result)`}</code>
               </div>
             </div>
           </div>
-          </div>
         </div>
       </section>
 

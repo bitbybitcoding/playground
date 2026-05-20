@@ -14,12 +14,16 @@ interface TopNavBarProps {
 export default function TopNavBar({ userRole }: TopNavBarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = useMemo(
+    () => (typeof window === 'undefined' ? null : createClient()),
+    []
+  );
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profile, setProfile] = useState<{ full_name: string | null; email: string } | null>(null);
 
   useEffect(() => {
     async function getProfile() {
+      if (!supabase) return;
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data } = await supabase
@@ -34,6 +38,7 @@ export default function TopNavBar({ userRole }: TopNavBarProps) {
   }, [supabase]);
 
   const handleSignOut = async () => {
+    if (!supabase) return;
     await supabase.auth.signOut();
     router.push('/login');
   };
