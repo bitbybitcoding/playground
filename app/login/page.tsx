@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useCallback, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, Key, ArrowRight, AlertCircle } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,11 +20,25 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Invite code state
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [inviteCode, setInviteCode] = useState('');
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [inviteLoading, setInviteLoading] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const errorCode = new URLSearchParams(window.location.search).get('error');
+    const params = new URLSearchParams(window.location.search);
+    const errorCode = params.get('error');
+    const urlEmail = params.get('email');
     if (!errorCode) return;
+
+    if (errorCode === 'missing_code' && urlEmail) {
+      // Flow B – invite code needed for this email
+      setPendingEmail(urlEmail);
+      return;
+    }
+
     const errorMessages: Record<string, string> = {
       not_allowed: 'This Google account is not approved for access.',
       oauth_failed: 'Google sign-in failed. Please try again.',
@@ -89,6 +103,94 @@ export default function LoginPage() {
     }
   };
 
+  /** Handle invite code submission for new Google users (Flow B) */
+  const handleInviteSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supabase || !pendingEmail) return;
+    setInviteLoading(true);
+    setInviteError(null);
+
+    try {
+      // Validate invite code
+      const { data: codeData, error: codeError } = await supabase
+        .from('invite_codes')
+        .select('*')
+        .eq('code', inviteCode.trim().toUpperCase())
+        .single();
+
+      if (codeError || !codeData) {
+        setInviteError('Invalid or already-used invitation code.');
+        await supabase.auth.signOut();
+        setInviteLoading(false);
+        return;
+      }
+
+      if (codeData.used) {
+        setInviteError('This invitation code has already been used.');
+        await supabase.auth.signOut();
+        setInviteLoading(false);
+        return;
+      }
+
+      if (codeData.expires_at && new Date(codeData.expires_at) < new Date()) {
+        setInviteError('This invitation code has expired.');
+        await supabase.auth.signOut();
+        setInviteLoading(false);
+        return;
+      }
+
+      // Valid code: create profile and mark code as used
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+      if (!userId) {
+        setInviteError('Session expired. Please sign in with Google again.');
+        await supabase.auth.signOut();
+        setInviteLoading(false);
+        return;
+      }
+
+      // Insert into public.profiles
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          email: pendingEmail,
+          role: 'student',
+        });
+
+      if (profileError) {
+        setInviteError('Failed to create profile. Please try again.');
+        await supabase.auth.signOut();
+        setInviteLoading(false);
+        return;
+      }
+
+      // Mark invite code as used
+      const { error: updateError } = await supabase
+        .from('invite_codes')
+        .update({
+          used: true,
+          used_by: userId,
+          used_at: new Date().toISOString(),
+          use_count: (codeData.use_count || 0) + 1,
+        })
+        .eq('id', codeData.id);
+
+      if (updateError) {
+        console.error('Failed to mark invite code as used:', updateError);
+      }
+
+      // Redirect to dashboard
+      router.push('/dashboard');
+      router.refresh();
+    } catch {
+      setInviteError('An unexpected error occurred.');
+      await supabase.auth.signOut();
+    } finally {
+      setInviteLoading(false);
+    }
+  }, [supabase, pendingEmail, inviteCode, router]);
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
@@ -117,98 +219,156 @@ export default function LoginPage() {
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={handleGoogleSignIn}
-            disabled={oauthLoading || loading}
-            className="w-full mb-6 bg-surface-container-high text-on-surface py-3.5 rounded-lg font-label font-bold hover:bg-surface-container-highest transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {oauthLoading ? (
-              <span className="w-5 h-5 border-2 border-slate-500/30 border-t-slate-500 rounded-full animate-spin" />
-            ) : (
-              <span className="text-sm font-bold">G</span>
-            )}
-            Sign in with Google
-          </button>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label htmlFor="email" className="block font-label font-bold text-sm text-on-surface mb-2">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  className="w-full pl-12 pr-4 py-3 bg-surface-container-low rounded-lg border border-outline-variant/30 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-label"
-                  required
-                />
+          {pendingEmail ? (
+            /* Flow B – invite code prompt for new Google users */
+            <div className="space-y-5">
+              <div className="p-4 bg-primary-container/20 rounded-lg">
+                <p className="text-sm text-on-surface font-label">
+                  Welcome! An invite code is required to create your account.<br />
+                  <span className="text-xs text-on-surface-variant">{pendingEmail}</span>
+                </p>
               </div>
-            </div>
 
-            <div>
-              <label htmlFor="password" className="block font-label font-bold text-sm text-on-surface mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-12 pr-12 py-3 bg-surface-container-low rounded-lg border border-outline-variant/30 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-label"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-on-surface transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary" />
-                <span className="text-sm text-slate-500 font-label">Remember me</span>
-              </label>
-              <Link href="/forgot-password" className="text-sm text-primary font-label font-medium hover:underline">
-                Forgot password?
-              </Link>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-primary text-white py-3.5 rounded-lg font-label font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  Sign In
-                  <ArrowRight className="w-5 h-5" />
-                </>
+              {inviteError && (
+                <div className="p-4 bg-error-container rounded-lg flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-error flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-on-error-container">{inviteError}</p>
+                </div>
               )}
-            </button>
-          </form>
 
-          <div className="mt-6 pt-6 border-t border-outline-variant/20 text-center">
-            <p className="text-sm text-slate-500 font-label">
-              Don&apos;t have an account?{' '}
-              <Link href="/signup" className="text-primary font-bold hover:underline">
-                Sign up with invite code
-              </Link>
-            </p>
-          </div>
+              <form onSubmit={handleInviteSubmit} className="space-y-4">
+                <div>
+                  <label htmlFor="inviteCode" className="block font-label font-bold text-sm text-on-surface mb-2">
+                    Invitation Code
+                  </label>
+                  <div className="relative">
+                    <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <input
+                      id="inviteCode"
+                      type="text"
+                      value={inviteCode}
+                      onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                      placeholder="BBB-XXXXXXXX"
+                      className="w-full pl-12 pr-4 py-3 bg-surface-container-low rounded-lg border border-outline-variant/30 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-label uppercase tracking-wider"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={inviteLoading}
+                  className="w-full bg-primary text-white py-3.5 rounded-lg font-label font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {inviteLoading ? (
+                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      Verify Code
+                      <ArrowRight className="w-5 h-5" />
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+          ) : (
+            <>
+              {/* Normal login form (email/password + Google sign-in) */}
+
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={oauthLoading || loading}
+                className="w-full mb-6 bg-surface-container-high text-on-surface py-3.5 rounded-lg font-label font-bold hover:bg-surface-container-highest transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {oauthLoading ? (
+                  <span className="w-5 h-5 border-2 border-slate-500/30 border-t-slate-500 rounded-full animate-spin" />
+                ) : (
+                  <span className="text-sm font-bold">G</span>
+                )}
+                Sign in with Google
+              </button>
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div>
+                  <label htmlFor="email" className="block font-label font-bold text-sm text-on-surface mb-2">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      className="w-full pl-12 pr-4 py-3 bg-surface-container-low rounded-lg border border-outline-variant/30 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-label"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="password" className="block font-label font-bold text-sm text-on-surface mb-2">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-12 pr-12 py-3 bg-surface-container-low rounded-lg border border-outline-variant/30 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-label"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-on-surface transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary" />
+                    <span className="text-sm text-slate-500 font-label">Remember me</span>
+                  </label>
+                  <Link href="/forgot-password" className="text-sm text-primary font-label font-medium hover:underline">
+                    Forgot password?
+                  </Link>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-primary text-white py-3.5 rounded-lg font-label font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      Sign In
+                      <ArrowRight className="w-5 h-5" />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              <div className="mt-6 pt-6 border-t border-outline-variant/20 text-center">
+                <p className="text-sm text-slate-500 font-label">
+                  Don&apos;t have an account?{' '}
+                  <Link href="/signup" className="text-primary font-bold hover:underline">
+                    Sign up with invite code
+                  </Link>
+                </p>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Back to home */}

@@ -1,47 +1,68 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { createAdminSupabaseClient, createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 
-const ERROR_REDIRECT = '/login?error=oauth_failed';
-const NOT_ALLOWED_REDIRECT = '/login?error=not_allowed';
-const MISSING_CODE_REDIRECT = '/login?error=missing_code';
-const MISSING_EMAIL_REDIRECT = '/login?error=missing_email';
-
-export async function GET(request: NextRequest) {
-  const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get('code');
-  const nextPath = requestUrl.searchParams.get('next');
-  const startedAtParam = requestUrl.searchParams.get('startedAt');
-  const origin = requestUrl.origin;
-
-  if (!code) {
-    return NextResponse.redirect(new URL(MISSING_CODE_REDIRECT, origin));
-  }
-
+/**
+ * OAuth callback handler.
+ * Implements the required flow:
+ *   1. Exchange the OAuth code for a Supabase session using `exchangeCodeForSession`.
+ *   2. Pull the user's email from `data.user.email`.
+ *   3. Query the `public.profiles` table by email.
+ *   4. If a profile exists, redirect to the dashboard.
+ *   5. If not, redirect to the login page with `error=missing_code` and the email.
+ *   6. On any error path, sign the user out before redirecting.
+ */
+export async function GET(request: Request) {
+  // Create a server‑side Supabase client that respects Next.js cookies.
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
-  if (error || !data.user) {
-    return NextResponse.redirect(new URL(ERROR_REDIRECT, origin));
-  }
+  const url = new URL(request.url);
+  const code = url.searchParams.get('code');
 
-  const email = data.user.email?.toLowerCase();
-  if (!email) {
+  // If no code is provided, treat as a failure.
+  if (!code) {
     await supabase.auth.signOut();
-    return NextResponse.redirect(new URL(MISSING_EMAIL_REDIRECT, origin));
+    return Response.redirect(new URL('/login?error=missing_code', url), 302);
   }
 
-  const startedAt = startedAtParam ? Number(startedAtParam) : null;
-  const createdAt = data.user.created_at ? new Date(data.user.created_at).getTime() : null;
-  const startedAtValid = startedAt !== null && Number.isFinite(startedAt);
-  const createdAfterStart = startedAtValid && createdAt !== null ? createdAt >= startedAt : true;
+  try {
+    // 1. Exchange OAuth code for a session – returns { data, error }
+    const { data: sessionData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+    if (exchangeError || !sessionData?.user?.email) {
+      // Missing email or exchange failure
+      await supabase.auth.signOut();
+      const redirect = new URL('/login', url);
+      redirect.searchParams.set('error', 'missing_email');
+      if (sessionData?.user?.email) redirect.searchParams.set('email', sessionData.user.email);
+      return Response.redirect(redirect, 302);
+    }
 
-  if (createdAfterStart) {
-    const adminSupabase = createAdminSupabaseClient();
-    await adminSupabase.auth.admin.deleteUser(data.user.id);
+    const userEmail = sessionData.user.email;
+
+    // 2. Query profiles by email
+    const { data: profile, error: profileError } = await supabase
+      .from('public.profiles')
+      .select('*')
+      .eq('email', userEmail)
+      .single();
+
+    if (profileError && profileError.code !== 'PGRST116') {
+      // Unexpected DB error – sign out and forward generic error
+      await supabase.auth.signOut();
+      return Response.redirect(new URL('/login?error=oauth_failed', url), 302);
+    }
+
+    if (profile) {
+      // Profile exists – allow access
+      return Response.redirect(new URL('/dashboard', url), 302);
+    }
+
+    // No profile → redirect with missing_code and email param
+    const redirect = new URL('/login', url);
+    redirect.searchParams.set('error', 'missing_code');
+    redirect.searchParams.set('email', userEmail);
+    return Response.redirect(redirect, 302);
+  } catch (e) {
+    // Any unexpected exception – ensure sign‑out
     await supabase.auth.signOut();
-    return NextResponse.redirect(new URL(NOT_ALLOWED_REDIRECT, origin));
+    return Response.redirect(new URL('/login?error=oauth_failed', url), 302);
   }
-
-  const safeNextPath = nextPath && nextPath.startsWith('/') ? nextPath : '/dashboard';
-  return NextResponse.redirect(new URL(safeNextPath, origin));
 }
