@@ -117,10 +117,9 @@ export default function LoginPage() {
       });
 
       if (!res.ok) {
+        // The endpoint already signed the user out on failure.
         setInviteError('Invalid or already-used invitation code.');
-        if (supabase) {
-          await supabase.auth.signOut();
-        }
+        setPendingEmail(null);  // clear invite prompt so normal form reappears
         setInviteLoading(false);
         return;
       }
@@ -130,13 +129,11 @@ export default function LoginPage() {
       router.refresh();
     } catch {
       setInviteError('An unexpected error occurred.');
-      if (supabase) {
-        await supabase.auth.signOut();
-      }
+      setPendingEmail(null);
     } finally {
       setInviteLoading(false);
     }
-  }, [inviteCode, router, supabase]);
+  }, [inviteCode, router]);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">

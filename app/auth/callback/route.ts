@@ -6,26 +6,19 @@ import { createServerSupabaseClient, createAdminSupabaseClient } from '@/lib/sup
  *
  * Flow A – returning user:
  *   1. Exchange OAuth code for a Supabase session.
- *   2. Look up the user's `public.profiles` row by id via the service-role
- *      client. A *returning* user has a profile whose `created_at` is older
- *      than ~60 s. (The `on_auth_user_created` trigger creates the profile
- *      in the same transaction that inserts the auth user, so a brand-new
- *      OAuth user has a profile whose age is essentially zero.) If the
- *      profile is older than the threshold, the user is returning and we
- *      redirect to `next`.
+ *   2. The user's `auth.users.created_at` is from their original sign‑up
+ *      (> 120 s ago) → they are a returning user. Redirect to `next`.
  *
  * Flow B – new user (invite gate):
- *   1. The profile is brand-new (just created by the trigger) and has not
- *      been redeemed. We sign the user out and redirect to
- *      `/login?error=missing_code&email=...` so the login page can render
- *      the invite-code prompt. The user then submits a code via
- *      `POST /api/auth/redeem-invite`, which performs the redemption and
- *      updates `profiles.full_name` to a sentinel value
- *      (`'invite-redeemed'`) so a *second* OAuth sign-in by the same user
- *      is treated as Flow A.
+ *   1. The user's `auth.users.created_at` was set moments ago by the OAuth
+ *      flow (< 120 s) → they are a brand‑new OAuth user who has not yet
+ *      redeemed an invite code.
+ *   2. Redirect to `/login?error=missing_code&email=...`. The session is
+ *      KEPT alive so that the redeem endpoint (`/api/auth/redeem-invite`)
+ *      can read the user's identity from the cookie.
+ *   3. The middleware is configured to allow this specific path.
  *
- * Rejection paths always call `supabase.auth.signOut()` to avoid a ghost
- * session.
+ * Rejection paths call `supabase.auth.signOut()`.
  */
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -44,54 +37,55 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/login?error=oauth_failed', origin));
   }
 
-  const userId = data.user.id;
   const email = data.user.email?.toLowerCase();
   if (!email) {
     await supabase.auth.signOut();
     return NextResponse.redirect(new URL('/login?error=oauth_failed', origin));
   }
 
-  const safeNextPath = nextPath && nextPath.startsWith('/') ? nextPath : '/dashboard';
-  const adminSupabase = createAdminSupabaseClient();
+  const safeNextPath =
+    nextPath && nextPath.startsWith('/') ? nextPath : '/dashboard';
 
-  // Look up the profile row. The `on_auth_user_created` trigger in
-  // `setup.sql` auto-creates a `profiles` row for every new `auth.users`
-  // insert, so "no profile" cannot be used to detect "new user".
+  // Distinguish a *returning* user from a *brand‑new* OAuth user.
   //
-  // To distinguish a *returning* user from a *brand-new* OAuth user we
-  // compare the profile's `created_at` against the current time. The trigger
-  // runs within the same transaction that inserts the auth user, so for a
-  // *new* OAuth sign-in both timestamps are within a few seconds of "now".
-  // A returning user has a profile that was created minutes / hours / days
-  // ago, so the profile's age is well beyond the OAuth user creation lag.
-  const { data: profile } = await adminSupabase
-    .from('profiles')
-    .select('id, full_name, role, created_at')
-    .eq('id', userId)
-    .maybeSingle();
-
-  // Threshold: treat a profile as "pre-existing" (returning user) when it
-  // is older than 60 seconds. This is well above the trigger-to-OAuth lag.
-  const NEW_USER_THRESHOLD_MS = 60_000;
-  const profileAgeMs = profile?.created_at
-    ? Date.now() - new Date(profile.created_at).getTime()
+  // For a returning user the `auth.users` row was created at the time
+  // of their **original** sign‑up (could be days/weeks ago). For a
+  // brand‑new user the row is created NOW by the OAuth exchange, so
+  // `created_at` is within a few seconds of the current time.
+  const NEW_USER_THRESHOLD_MS = 120_000; // 2 min — well above OAuth latency
+  const userAgeMs = data.user.created_at
+    ? Date.now() - new Date(data.user.created_at).getTime()
     : 0;
-  const isReturningUser =
-    profile !== null && profileAgeMs > NEW_USER_THRESHOLD_MS;
-  // Also accept the explicit post-redemption marker set below.
-  const isPreApproved = profile?.full_name === 'invite-redeemed';
+  const isNewUser = userAgeMs < NEW_USER_THRESHOLD_MS;
 
-  if (isReturningUser || isPreApproved) {
+  if (!isNewUser) {
+    // Flow A — returning user
     return NextResponse.redirect(new URL(safeNextPath, origin));
   }
 
-  // New user (brand-new OAuth account, profile just created by the trigger,
-  // not yet redeemed). Sign them out and send them to the login page so they
-  // can submit an invite code. The login page POSTs the code to
-  // `/api/auth/redeem-invite`, which performs the redemption with the
-  // service-role client (bypasses RLS so non-admin users can mark the code
-  // as used) and then redirects to `next`.
-  await supabase.auth.signOut();
+  // Flow B — new user.  Check whether the profile already carries a
+  // post‑redemption marker (set by `/api/auth/redeem-invite`) so that
+  // a user who redeemed an invite and then immediately signs in again
+  // is not sent back to the invite prompt.
+  const adminSupabase = createAdminSupabaseClient();
+  try {
+    const { data: profile } = await adminSupabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', data.user.id)
+      .maybeSingle();
+
+    if (profile?.full_name === 'invite-redeemed') {
+      // Pre‑approved via previous redemption — treat as returning
+      return NextResponse.redirect(new URL(safeNextPath, origin));
+    }
+  } catch {
+    // Profile lookup failed for some unexpected reason.  Fall through
+    // to the invite prompt rather than silently blocking the user.
+  }
+
+  // Send the user to the login page with the invite‑code prompt.
+  // The session stays alive — the middleware allows this specific path.
   const redirectUrl = new URL('/login', origin);
   redirectUrl.searchParams.set('error', 'missing_code');
   redirectUrl.searchParams.set('email', email);

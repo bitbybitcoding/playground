@@ -16,8 +16,25 @@ export default async function DashboardPage() {
     redirect('/login');
   }
 
+  // Look up the user's profile.  For OAuth users the trigger creates a
+  // row with `full_name = null`.  The redeem endpoint sets it to
+  // `'invite-redeemed'` once an invite code is accepted.  Email/password
+  // signups pass `full_name` in user metadata so the trigger picks it up.
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  // If the profile exists and has `full_name = null`, the user is an
+  // unredeemed OAuth user.  Send them back to the invite prompt.
+  if (profile && profile.full_name === null) {
+    const params = new URLSearchParams({ error: 'missing_code' });
+    if (user.email) params.set('email', user.email);
+    redirect(`/login?${params.toString()}`);
+  }
+
   const [
-    { data: profile },
     { data: userProgress },
     { data: pathwayProgress },
     { data: recentChallenges },
