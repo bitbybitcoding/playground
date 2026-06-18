@@ -60,7 +60,10 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (isPublicRoute) {
-    if (user && isAuthPage) {
+    // Allow authenticated users to view the login page when they have been
+    // redirected there by the OAuth callback to enter an invite code.
+    const hasMissingCode = request.nextUrl.searchParams.get('error') === 'missing_code';
+    if (user && isAuthPage && !hasMissingCode) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
     return supabaseResponse;
