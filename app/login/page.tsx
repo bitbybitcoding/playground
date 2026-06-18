@@ -20,7 +20,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Invite code state
+
+  // Invite code state – shown when redirected back with `error=missing_code`.
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState('');
   const [inviteError, setInviteError] = useState<string | null>(null);
@@ -34,7 +35,6 @@ export default function LoginPage() {
     if (!errorCode) return;
 
     if (errorCode === 'missing_code' && urlEmail) {
-      // Flow B – invite code needed for this email
       setPendingEmail(urlEmail);
       return;
     }
@@ -43,7 +43,8 @@ export default function LoginPage() {
       not_allowed: 'This Google account is not approved for access.',
       oauth_failed: 'Google sign-in failed. Please try again.',
       missing_code: 'Google sign-in failed. Please try again.',
-      missing_email: 'Google sign-in did not return an email address.',
+      missing_email: 'Google sign-in failed. Please try again.',
+      invalid_invite_code: 'Invalid or already-used invitation code.',
     };
     setError(errorMessages[errorCode] ?? 'Sign-in failed. Please try again.');
   }, []);
@@ -87,8 +88,7 @@ export default function LoginPage() {
       return;
     }
 
-    const startedAt = Date.now();
-    const redirectTo = `${window.location.origin}/auth/callback?next=/dashboard&startedAt=${startedAt}`;
+    const redirectTo = `${window.location.origin}/auth/callback?next=/dashboard`;
 
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -103,93 +103,40 @@ export default function LoginPage() {
     }
   };
 
-  /** Handle invite code submission for new Google users (Flow B) */
+  /** POST the invite code to /api/auth/redeem-invite (server-side redemption). */
   const handleInviteSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supabase || !pendingEmail) return;
     setInviteLoading(true);
     setInviteError(null);
 
     try {
-      // Validate invite code
-      const { data: codeData, error: codeError } = await supabase
-        .from('invite_codes')
-        .select('*')
-        .eq('code', inviteCode.trim().toUpperCase())
-        .single();
+      const res = await fetch('/api/auth/redeem-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inviteCode: inviteCode.trim().toUpperCase() }),
+      });
 
-      if (codeError || !codeData) {
+      if (!res.ok) {
         setInviteError('Invalid or already-used invitation code.');
-        await supabase.auth.signOut();
+        if (supabase) {
+          await supabase.auth.signOut();
+        }
         setInviteLoading(false);
         return;
       }
 
-      if (codeData.used) {
-        setInviteError('This invitation code has already been used.');
-        await supabase.auth.signOut();
-        setInviteLoading(false);
-        return;
-      }
-
-      if (codeData.expires_at && new Date(codeData.expires_at) < new Date()) {
-        setInviteError('This invitation code has expired.');
-        await supabase.auth.signOut();
-        setInviteLoading(false);
-        return;
-      }
-
-      // Valid code: create profile and mark code as used
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData?.session?.user?.id;
-      if (!userId) {
-        setInviteError('Session expired. Please sign in with Google again.');
-        await supabase.auth.signOut();
-        setInviteLoading(false);
-        return;
-      }
-
-      // Insert into public.profiles
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: userId,
-          email: pendingEmail,
-          role: 'student',
-        });
-
-      if (profileError) {
-        setInviteError('Failed to create profile. Please try again.');
-        await supabase.auth.signOut();
-        setInviteLoading(false);
-        return;
-      }
-
-      // Mark invite code as used
-      const { error: updateError } = await supabase
-        .from('invite_codes')
-        .update({
-          used: true,
-          used_by: userId,
-          used_at: new Date().toISOString(),
-          use_count: (codeData.use_count || 0) + 1,
-        })
-        .eq('id', codeData.id);
-
-      if (updateError) {
-        console.error('Failed to mark invite code as used:', updateError);
-      }
-
-      // Redirect to dashboard
+      // Success – redirect to the dashboard.
       router.push('/dashboard');
       router.refresh();
     } catch {
       setInviteError('An unexpected error occurred.');
-      await supabase.auth.signOut();
+      if (supabase) {
+        await supabase.auth.signOut();
+      }
     } finally {
       setInviteLoading(false);
     }
-  }, [supabase, pendingEmail, inviteCode, router]);
+  }, [inviteCode, router, supabase]);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
