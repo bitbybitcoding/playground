@@ -40,11 +40,6 @@ export default async function DashboardPage() {
     { data: recentChallenges },
   ] = await Promise.all([
     supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single(),
-    supabase
       .from('user_progress')
       .select('*, challenges(*)')
       .eq('user_id', user.id)
